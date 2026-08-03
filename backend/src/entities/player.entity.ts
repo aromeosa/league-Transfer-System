@@ -1,0 +1,48 @@
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { LegacyReason, PlayerOrigin, PlayerStatus } from './enums';
+import { Team } from './team.entity';
+import { DecimalTransformer } from './decimal.transformer';
+
+@Entity('players')
+export class Player {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  name: string;
+
+  /**
+   * Current roster (§4.1). Null means either never registered (Free Agent) or
+   * previously registered and currently unattached (still REGISTERED status, §1.4 #7).
+   */
+  @ManyToOne(() => Team, (team) => team.roster, { nullable: true })
+  @JoinColumn({ name: 'current_team_id' })
+  currentTeam?: Team | null;
+
+  @Column({ type: 'enum', enum: PlayerStatus, default: PlayerStatus.FREE_AGENT })
+  status: PlayerStatus;
+
+  @Column({ name: 'origin_type', type: 'enum', enum: PlayerOrigin })
+  originType: PlayerOrigin;
+
+  @Column({ name: 'legacy_reason', type: 'enum', enum: LegacyReason, nullable: true })
+  legacyReason?: LegacyReason | null;
+
+  /** R500–R5,000 (§1.3) — nullable until the current team assigns one. */
+  @Column({
+    name: 'transfer_value',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: DecimalTransformer,
+  })
+  transferValue?: number | null;
+
+  /** Season transfer count, capped by originType (§1.4 #4/#9). */
+  @Column({ name: 'transfer_count', type: 'int', default: 0 })
+  transferCount: number;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+}
