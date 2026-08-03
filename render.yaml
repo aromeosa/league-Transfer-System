@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: 5quadleague-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run migration:run:prod && npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: 5quadleague-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      # Update after deploying the frontend (Netlify) — comma-separate to allow
+      # more than one origin, e.g. "https://your-app.netlify.app,http://localhost:5173".
+      - key: CORS_ORIGIN
+        value: http://localhost:5173
+      # Shared secret the external cron pinger (cron-job.org) sends as the
+      # x-sweep-secret header to POST /internal/sweep. Render auto-generates this;
+      # copy it from the dashboard once deployed to configure the pinger.
+      - key: SWEEP_SECRET
+        generateValue: true
+
+databases:
+  - name: 5quadleague-db
+    plan: free
