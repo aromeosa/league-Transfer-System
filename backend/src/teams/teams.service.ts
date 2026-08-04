@@ -2,7 +2,16 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Player, PlayerOrigin, PlayerStatus, RosterHistory, Team, UserAccount, UserRole } from '../entities';
+import {
+  Player,
+  PlayerOrigin,
+  PlayerStatus,
+  RosterHistory,
+  Team,
+  TeamStatus,
+  UserAccount,
+  UserRole,
+} from '../entities';
 import { CreateTeamDto } from './dto/create-team.dto';
 
 @Injectable()
@@ -12,8 +21,17 @@ export class TeamsService {
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
-  /** League Admin only (§1.4 #11 — one-time setup ahead of a team's first window, no distinct off-season ruleset). */
+  /** League Admin only — direct creation is already an implicit approval, so the team is ACTIVE immediately. */
   async createTeam(dto: CreateTeamDto): Promise<Team> {
+    return this.createTeamRecord(dto, TeamStatus.ACTIVE);
+  }
+
+  /** Public self-registration — sits PENDING_APPROVAL until a League Admin approves or rejects it. */
+  async registerTeam(dto: CreateTeamDto): Promise<Team> {
+    return this.createTeamRecord(dto, TeamStatus.PENDING_APPROVAL);
+  }
+
+  private async createTeamRecord(dto: CreateTeamDto, status: TeamStatus): Promise<Team> {
     const existingOwner = await this.dataSource
       .getRepository(UserAccount)
       .findOne({ where: { email: dto.owner.email } });
@@ -22,7 +40,7 @@ export class TeamsService {
     }
 
     return this.dataSource.transaction(async (manager) => {
-      const team = await manager.save(Team, manager.create(Team, { name: dto.name }));
+      const team = await manager.save(Team, manager.create(Team, { name: dto.name, status }));
 
       const passwordHash = await bcrypt.hash(dto.owner.password, 10);
       await manager.save(
@@ -67,5 +85,35 @@ export class TeamsService {
       throw new NotFoundException('Team not found');
     }
     return team;
+  }
+
+  /** League Admin only — powers the pending-approval queue (and general team listing). */
+  findAll(status?: TeamStatus): Promise<Team[]> {
+    return this.teamRepo.find({
+      where: status ? { status } : {},
+      relations: ['roster', 'ownerAccount'],
+      order: { name: 'ASC' },
+    });
+  }
+
+  async approve(teamId: string): Promise<Team> {
+    return this.decide(teamId, TeamStatus.ACTIVE);
+  }
+
+  async reject(teamId: string): Promise<Team> {
+    return this.decide(teamId, TeamStatus.REJECTED);
+  }
+
+  private async decide(teamId: string, next: TeamStatus): Promise<Team> {
+    const team = await this.teamRepo.findOne({ where: { id: teamId } });
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+    if (team.status !== TeamStatus.PENDING_APPROVAL) {
+      throw new ConflictException(`Team is not pending approval (status: ${team.status})`);
+    }
+    team.status = next;
+    await this.teamRepo.save(team);
+    return this.getTeam(teamId);
   }
 }

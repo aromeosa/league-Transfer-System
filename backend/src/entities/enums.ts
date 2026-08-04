@@ -3,6 +3,13 @@ export enum UserRole {
   LEAGUE_ADMIN = 'LEAGUE_ADMIN',
 }
 
+/** Self-registered teams start PENDING_APPROVAL; admin-created teams start ACTIVE. */
+export enum TeamStatus {
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  ACTIVE = 'ACTIVE',
+  REJECTED = 'REJECTED',
+}
+
 export enum PlayerStatus {
   FREE_AGENT = 'FREE_AGENT',
   REGISTERED = 'REGISTERED',

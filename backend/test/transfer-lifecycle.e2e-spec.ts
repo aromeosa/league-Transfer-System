@@ -272,4 +272,59 @@ describe('Transfer Request Lifecycle (e2e)', () => {
       .send({ playerId: freeAgent.id, requestType: 'CLUB_TRANSFER', proposedFee: 600 })
       .expect(400);
   });
+
+  it('team self-registration: pending team is blocked from mutating actions until a League Admin approves it', async () => {
+    const registerRes = await request(app.getHttpServer())
+      .post('/teams/register')
+      .send({
+        name: 'Delta Squad',
+        owner: { name: 'Delta Owner', email: 'delta-owner@test.local', password: 'OwnerPass123!' },
+        players: [1, 2, 3, 4, 5].map((n) => ({ name: `Delta Player ${n}` })),
+      })
+      .expect(201);
+    expect(registerRes.body.status).toBe('PENDING_APPROVAL');
+    const deltaTeamId = registerRes.body.id;
+
+    const deltaLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'delta-owner@test.local', password: 'OwnerPass123!' })
+      .expect(201);
+    expect(deltaLogin.body.user.teamStatus).toBe('PENDING_APPROVAL');
+    const deltaTokenWhilePending = deltaLogin.body.accessToken;
+
+    // Blocked server-side, not just hidden in the UI — a pending team can't submit.
+    await request(app.getHttpServer())
+      .post('/transfer-requests')
+      .set('Authorization', `Bearer ${deltaTokenWhilePending}`)
+      .send({ playerId: teamAPlayerIds[3], requestType: 'CLUB_TRANSFER', proposedFee: 500 })
+      .expect(403);
+
+    // Rejecting/approving a team that isn't pending is a conflict.
+    await request(app.getHttpServer())
+      .post(`/teams/${teamAId}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(409);
+
+    const pendingList = await request(app.getHttpServer())
+      .get('/teams?status=PENDING_APPROVAL')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(pendingList.body.map((t: { id: string }) => t.id)).toContain(deltaTeamId);
+
+    await request(app.getHttpServer())
+      .post(`/teams/${deltaTeamId}/approve`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(201)
+      .expect((res) => expect(res.body.status).toBe('ACTIVE'));
+
+    // The token issued while pending must still work now — the guard checks the DB
+    // live, not the token's stale embedded state (there is none; teamStatus is only
+    // ever read from a fresh login/team fetch).
+    const secondMove = await request(app.getHttpServer())
+      .post('/transfer-requests')
+      .set('Authorization', `Bearer ${deltaTokenWhilePending}`)
+      .send({ playerId: teamAPlayerIds[3], requestType: 'CLUB_TRANSFER', proposedFee: 500 })
+      .expect(201);
+    expect(secondMove.body.status).toBe('PENDING_RELEASING_APPROVAL');
+  });
 });

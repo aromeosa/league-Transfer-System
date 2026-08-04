@@ -1,4 +1,5 @@
 export type UserRole = 'TEAM_OWNER' | 'LEAGUE_ADMIN';
+export type TeamStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
 export type PlayerStatus = 'FREE_AGENT' | 'REGISTERED' | 'LEGACY';
 export type RequestType = 'FREE_AGENT_SIGNING' | 'CLUB_TRANSFER' | 'LEGACY_TRANSFER';
 export type RequestStatus =
@@ -16,6 +17,7 @@ export interface CurrentUser {
   email: string;
   role: UserRole;
   teamId: string | null;
+  teamStatus: TeamStatus | null;
 }
 
 export interface Player {
@@ -32,6 +34,7 @@ export interface Player {
 export interface Team {
   id: string;
   name: string;
+  status: TeamStatus;
   roster?: Player[];
   ownerAccount?: { id: string; name: string; email: string };
 }
