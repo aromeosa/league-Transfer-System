@@ -8,6 +8,7 @@ import {
   LegacyReason,
   RosterHistory,
   Team,
+  TeamStatus,
   TransferWindow,
   UserAccount,
   UserRole,
@@ -34,7 +35,10 @@ async function seed() {
       }),
     );
 
-    const teamAlpha = await manager.save(Team, manager.create(Team, { name: 'Alpha Squad' }));
+    const teamAlpha = await manager.save(
+      Team,
+      manager.create(Team, { name: 'Alpha Squad', status: TeamStatus.ACTIVE }),
+    );
     await manager.save(
       UserAccount,
       manager.create(UserAccount, {
@@ -46,7 +50,10 @@ async function seed() {
       }),
     );
 
-    const teamBeta = await manager.save(Team, manager.create(Team, { name: 'Beta Squad' }));
+    const teamBeta = await manager.save(
+      Team,
+      manager.create(Team, { name: 'Beta Squad', status: TeamStatus.ACTIVE }),
+    );
     await manager.save(
       UserAccount,
       manager.create(UserAccount, {
@@ -56,6 +63,38 @@ async function seed() {
         role: UserRole.TEAM_OWNER,
         team: teamBeta,
       }),
+    );
+
+    // A team still awaiting League Admin approval, so the queue is testable immediately.
+    const teamGamma = await manager.save(
+      Team,
+      manager.create(Team, { name: 'Gamma Squad (pending)', status: TeamStatus.PENDING_APPROVAL }),
+    );
+    await manager.save(
+      UserAccount,
+      manager.create(UserAccount, {
+        name: 'Gamma Owner',
+        email: 'gamma@5quadleague.test',
+        passwordHash,
+        role: UserRole.TEAM_OWNER,
+        team: teamGamma,
+      }),
+    );
+    const gammaRoster = await manager.save(
+      Player,
+      [1, 2, 3, 4, 5].map((n) =>
+        manager.create(Player, {
+          name: `Gamma Player ${n}`,
+          currentTeam: teamGamma,
+          status: PlayerStatus.REGISTERED,
+          originType: PlayerOrigin.DIRECT_REGISTRATION,
+          transferValue: 800 + n * 100,
+        }),
+      ),
+    );
+    await manager.save(
+      RosterHistory,
+      gammaRoster.map((player) => manager.create(RosterHistory, { player, team: teamGamma, joinedAt: now })),
     );
 
     const alphaRoster = await manager.save(
@@ -148,8 +187,9 @@ async function seed() {
 
   console.log('Seed complete. Accounts (all use password: ' + DEV_PASSWORD + '):');
   console.log('  League Admin -> admin@5quadleague.test');
-  console.log('  Alpha Owner  -> alpha@5quadleague.test');
-  console.log('  Beta Owner   -> beta@5quadleague.test');
+  console.log('  Alpha Owner  -> alpha@5quadleague.test (ACTIVE)');
+  console.log('  Beta Owner   -> beta@5quadleague.test (ACTIVE)');
+  console.log('  Gamma Owner  -> gamma@5quadleague.test (PENDING_APPROVAL)');
 
   await dataSource.destroy();
 }

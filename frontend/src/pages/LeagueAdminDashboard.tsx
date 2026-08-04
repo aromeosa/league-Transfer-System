@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { TransferRequest, TransferWindow } from '../types';
+import type { Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { TeamRegistrationForm } from '../components/TeamRegistrationForm';
 
 export function LeagueAdminDashboard() {
   const { user, token, logout } = useAuth();
   const [window_, setWindow] = useState<TransferWindow | null>(null);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
+  const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
@@ -17,13 +18,15 @@ export function LeagueAdminDashboard() {
     let cancelled = false;
     async function load() {
       try {
-        const [windowRes, requestsRes] = await Promise.all([
+        const [windowRes, requestsRes, pendingTeamsRes] = await Promise.all([
           api.get<TransferWindow | null>('/transfer-windows/current', token),
           api.get<TransferRequest[]>('/transfer-requests', token),
+          api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
         ]);
         if (cancelled) return;
         setWindow(windowRes);
         setRequests(requestsRes);
+        setPendingTeams(pendingTeamsRes);
       } catch (err) {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
       }
@@ -45,7 +48,21 @@ export function LeagueAdminDashboard() {
       {error && <p className="error">{error}</p>}
 
       <WindowControls window={window_} token={token} onChanged={refresh} />
-      <CreateTeamForm token={token} onCreated={refresh} />
+
+      <section className="card">
+        <h2>Pending team registrations</h2>
+        {pendingTeams.length === 0 ? (
+          <p className="muted">No teams awaiting approval.</p>
+        ) : (
+          pendingTeams.map((t) => <PendingTeamRow key={t.id} team={t} token={token} onDecided={refresh} />)
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Register a new team</h2>
+        <p className="muted">Creates a team directly — active immediately, no approval step.</p>
+        <TeamRegistrationForm endpoint="/teams" token={token} submitLabel="Create team" onSuccess={refresh} />
+      </section>
 
       <section className="card">
         <h2>Awaiting League Admin decision</h2>
@@ -178,89 +195,33 @@ function LeagueDecisionRow({
   );
 }
 
-function CreateTeamForm({ token, onCreated }: { token: string | null; onCreated: () => void }) {
-  const [name, setName] = useState('');
-  const [ownerName, setOwnerName] = useState('');
-  const [ownerEmail, setOwnerEmail] = useState('');
-  const [ownerPassword, setOwnerPassword] = useState('');
-  const [playerNames, setPlayerNames] = useState(['', '', '', '', '']);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+function PendingTeamRow({ team, token, onDecided }: { team: Team; token: string | null; onDecided: () => void }) {
+  const [busy, setBusy] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
+  async function decide(action: 'approve' | 'reject') {
+    setBusy(true);
     try {
-      await api.post(
-        '/teams',
-        {
-          name,
-          owner: { name: ownerName, email: ownerEmail, password: ownerPassword },
-          players: playerNames.filter((n) => n.trim()).map((n) => ({ name: n })),
-        },
-        token,
-      );
-      setName('');
-      setOwnerName('');
-      setOwnerEmail('');
-      setOwnerPassword('');
-      setPlayerNames(['', '', '', '', '']);
-      onCreated();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to create team');
+      await api.post(`/teams/${team.id}/${action}`, {}, token);
+      onDecided();
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
   }
 
   return (
-    <section className="card">
-      <h2>Register a new team</h2>
-      <form onSubmit={handleSubmit} className="stacked-form">
-        <label>
-          Team name
-          <input value={name} onChange={(e) => setName(e.target.value)} required />
-        </label>
-        <label>
-          Owner name
-          <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required />
-        </label>
-        <label>
-          Owner email
-          <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} required />
-        </label>
-        <label>
-          Owner password
-          <input
-            type="password"
-            value={ownerPassword}
-            onChange={(e) => setOwnerPassword(e.target.value)}
-            minLength={8}
-            required
-          />
-        </label>
-        <fieldset>
-          <legend>Initial roster (minimum 5 players)</legend>
-          {playerNames.map((value, i) => (
-            <input
-              key={i}
-              value={value}
-              placeholder={`Player ${i + 1} name`}
-              onChange={(e) => {
-                const next = [...playerNames];
-                next[i] = e.target.value;
-                setPlayerNames(next);
-              }}
-              required
-            />
-          ))}
-        </fieldset>
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Creating…' : 'Create team'}
+    <div className="request-row">
+      <span>
+        <strong>{team.name}</strong> — owner {team.ownerAccount?.name} ({team.ownerAccount?.email}),{' '}
+        {team.roster?.length ?? 0} players
+      </span>
+      <span>
+        <button disabled={busy} onClick={() => decide('approve')}>
+          Approve
         </button>
-      </form>
-      {error && <p className="error">{error}</p>}
-    </section>
+        <button disabled={busy} onClick={() => decide('reject')}>
+          Reject
+        </button>
+      </span>
+    </div>
   );
 }

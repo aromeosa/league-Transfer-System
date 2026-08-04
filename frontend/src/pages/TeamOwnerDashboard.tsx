@@ -63,6 +63,21 @@ export function TeamOwnerDashboard() {
     );
   }
 
+  if (team.status !== 'ACTIVE') {
+    return (
+      <div className="page">
+        <TopBar onLogout={logout} title={`${team.name} — Team Owner`} />
+        {team.status === 'PENDING_APPROVAL' ? (
+          <p className="banner banner-bad">
+            Your team registration is still pending League Admin approval. Check back once it's been reviewed.
+          </p>
+        ) : (
+          <p className="banner banner-bad">Your team registration was rejected.</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="page">
       <TopBar onLogout={logout} title={`${team.name} — Team Owner`} />

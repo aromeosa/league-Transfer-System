@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserAccount } from './user-account.entity';
 import { Player } from './player.entity';
+import { TeamStatus } from './enums';
 
 @Entity('teams')
 export class Team {
@@ -9,6 +10,9 @@ export class Team {
 
   @Column({ unique: true })
   name: string;
+
+  @Column({ type: 'enum', enum: TeamStatus, default: TeamStatus.PENDING_APPROVAL })
+  status: TeamStatus;
 
   /** Inverse side — the owning FK (`team_id`) lives on UserAccount, see §4.1. */
   @OneToOne(() => UserAccount, (owner) => owner.team)

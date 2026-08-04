@@ -38,6 +38,9 @@ export class AuthService {
         email: user.email,
         role: user.role,
         teamId: user.team?.id ?? null,
+        // Fetched fresh at login, not embedded in the JWT itself — see ActiveTeamGuard
+        // for why enforcement never trusts a token's team status.
+        teamStatus: user.team?.status ?? null,
       },
     };
   }
