@@ -1,0 +1,11 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+# React Router SPA — deep links (e.g. /admin, /team) must serve index.html,
+# not 404, so client-side routing can take over.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
