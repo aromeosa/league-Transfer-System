@@ -96,6 +96,19 @@ export class TeamsService {
     });
   }
 
+  /**
+   * Public team directory — active teams and their rosters only. Deliberately doesn't
+   * load `ownerAccount` (unlike `findAll`), so owner names/emails never reach this
+   * unauthenticated response.
+   */
+  findPublicActive(): Promise<Team[]> {
+    return this.teamRepo.find({
+      where: { status: TeamStatus.ACTIVE },
+      relations: ['roster'],
+      order: { name: 'ASC' },
+    });
+  }
+
   async approve(teamId: string): Promise<Team> {
     return this.decide(teamId, TeamStatus.ACTIVE);
   }

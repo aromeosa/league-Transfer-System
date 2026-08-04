@@ -52,6 +52,9 @@ export function LoginPage() {
         <p className="muted">
           New team? <Link to="/register">Register a new team</Link>
         </p>
+        <p className="muted">
+          <Link to="/teams">View league teams</Link>
+        </p>
       </form>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Team, TransferRequest, TransferWindow } from '../types';
@@ -43,7 +44,12 @@ export function LeagueAdminDashboard() {
     <div className="page">
       <header className="topbar">
         <strong>{user?.name} — League Admin</strong>
-        <button onClick={logout}>Sign out</button>
+        <span>
+          <Link to="/teams">View league teams</Link>
+          <button onClick={logout} style={{ marginLeft: '1rem' }}>
+            Sign out
+          </button>
+        </span>
       </header>
       {error && <p className="error">{error}</p>}
 

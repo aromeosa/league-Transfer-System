@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, RequestType, Team, TransferRequest, TransferWindow } from '../types';
@@ -133,7 +134,12 @@ function TopBar({ title, onLogout }: { title: string; onLogout: () => void }) {
   return (
     <header className="topbar">
       <strong>{title}</strong>
-      <button onClick={onLogout}>Sign out</button>
+      <span>
+        <Link to="/teams">View league teams</Link>
+        <button onClick={onLogout} style={{ marginLeft: '1rem' }}>
+          Sign out
+        </button>
+      </span>
     </header>
   );
 }
