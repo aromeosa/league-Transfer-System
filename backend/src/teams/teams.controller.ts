@@ -36,6 +36,15 @@ export class TeamsController {
     return this.teamsService.findAll(status);
   }
 
+  /**
+   * Public team directory — active teams and rosters only, no auth required.
+   * Registered before `:id` so it isn't shadowed by that wildcard route.
+   */
+  @Get('public')
+  findPublicActive() {
+    return this.teamsService.findPublicActive();
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
