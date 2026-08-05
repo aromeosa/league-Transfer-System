@@ -64,6 +64,7 @@ export function TeamOwnerDashboard() {
   const navItems = [
     { label: 'Dashboard', path: '/team', icon: <HomeIcon /> },
     { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
+    { label: 'How Transfers Work', path: '/how-it-works', icon: <TransferIcon /> },
   ];
 
   if (!team) {
