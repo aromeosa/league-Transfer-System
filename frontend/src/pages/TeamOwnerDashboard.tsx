@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, RequestType, Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { StatTile } from '../components/StatTile';
+import { DashboardShell } from '../layout/DashboardShell';
+import { HomeIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
 
 export function TeamOwnerDashboard() {
   const { user, token, logout } = useAuth();
@@ -54,20 +56,32 @@ export function TeamOwnerDashboard() {
     () => requests.filter((r) => r.requestingTeam.id === user?.teamId && r.status === 'PENDING_PAYMENT'),
     [requests, user],
   );
+  const squadValue = useMemo(
+    () => team?.roster?.reduce((sum, p) => sum + (p.transferValue ?? 0), 0) ?? 0,
+    [team],
+  );
+
+  const navItems = [
+    { label: 'Dashboard', path: '/team', icon: <HomeIcon /> },
+    { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
+  ];
 
   if (!team) {
     return (
-      <div className="page">
-        <TopBar onLogout={logout} title={user?.name ?? ''} />
+      <DashboardShell title={user?.name ?? ''} userName={user?.name} onLogout={logout} navItems={navItems}>
         {error ? <p className="error">{error}</p> : <p>Loading…</p>}
-      </div>
+      </DashboardShell>
     );
   }
 
   if (team.status !== 'ACTIVE') {
     return (
-      <div className="page">
-        <TopBar onLogout={logout} title={`${team.name} — Team Owner`} />
+      <DashboardShell
+        title={`${team.name} — Team Owner`}
+        userName={user?.name}
+        onLogout={logout}
+        navItems={navItems}
+      >
         {team.status === 'PENDING_APPROVAL' ? (
           <p className="banner banner-bad">
             Your team registration is still pending League Admin approval. Check back once it's been reviewed.
@@ -75,14 +89,20 @@ export function TeamOwnerDashboard() {
         ) : (
           <p className="banner banner-bad">Your team registration was rejected.</p>
         )}
-      </div>
+      </DashboardShell>
     );
   }
 
   return (
-    <div className="page">
-      <TopBar onLogout={logout} title={`${team.name} — Team Owner`} />
+    <DashboardShell title={`${team.name} — Team Owner`} userName={user?.name} onLogout={logout} navItems={navItems}>
       {error && <p className="error">{error}</p>}
+
+      <div className="stat-tile-row">
+        <StatTile icon={<UsersIcon />} label="Roster size" value={team.roster?.length ?? 0} />
+        <StatTile icon={<TableIcon />} label="Squad value" value={`R${squadValue}`} />
+        <StatTile icon={<TransferIcon />} label="Incoming requests" value={incoming.length} />
+        <StatTile icon={<TransferIcon />} label="Awaiting payment" value={awaitingMyPayment.length} />
+      </div>
 
       <WindowBanner window={window_} />
 
@@ -126,21 +146,7 @@ export function TeamOwnerDashboard() {
         <h2>All requests involving your team</h2>
         <RequestTable requests={requests} />
       </section>
-    </div>
-  );
-}
-
-function TopBar({ title, onLogout }: { title: string; onLogout: () => void }) {
-  return (
-    <header className="topbar">
-      <strong>{title}</strong>
-      <span>
-        <Link to="/teams">View league teams</Link>
-        <button onClick={onLogout} style={{ marginLeft: '1rem' }}>
-          Sign out
-        </button>
-      </span>
-    </header>
+    </DashboardShell>
   );
 }
 

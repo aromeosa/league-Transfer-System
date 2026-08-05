@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { Team, TransferRequest, TransferWindow } from '../types';
+import type { Player, Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { StatTile } from '../components/StatTile';
 import { TeamRegistrationForm } from '../components/TeamRegistrationForm';
+import { DashboardShell } from '../layout/DashboardShell';
+import { HomeIcon, TableIcon, TransferIcon, UserCogIcon, UsersIcon } from '../components/icons';
 
 export function LeagueAdminDashboard() {
   const { user, token, logout } = useAuth();
   const [window_, setWindow] = useState<TransferWindow | null>(null);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
   const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
+  const [activeTeamCount, setActiveTeamCount] = useState(0);
+  const [playerCount, setPlayerCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
@@ -19,15 +23,19 @@ export function LeagueAdminDashboard() {
     let cancelled = false;
     async function load() {
       try {
-        const [windowRes, requestsRes, pendingTeamsRes] = await Promise.all([
+        const [windowRes, requestsRes, pendingTeamsRes, activeTeamsRes, playersRes] = await Promise.all([
           api.get<TransferWindow | null>('/transfer-windows/current', token),
           api.get<TransferRequest[]>('/transfer-requests', token),
           api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
+          api.get<Team[]>('/teams?status=ACTIVE', token),
+          api.get<Player[]>('/players', token),
         ]);
         if (cancelled) return;
         setWindow(windowRes);
         setRequests(requestsRes);
         setPendingTeams(pendingTeamsRes);
+        setActiveTeamCount(activeTeamsRes.length);
+        setPlayerCount(playersRes.length);
       } catch (err) {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
       }
@@ -41,17 +49,23 @@ export function LeagueAdminDashboard() {
   const pendingLeague = requests.filter((r) => r.status === 'PENDING_LEAGUE_APPROVAL');
 
   return (
-    <div className="page">
-      <header className="topbar">
-        <strong>{user?.name} — League Admin</strong>
-        <span>
-          <Link to="/teams">View league teams</Link>
-          <button onClick={logout} style={{ marginLeft: '1rem' }}>
-            Sign out
-          </button>
-        </span>
-      </header>
+    <DashboardShell
+      title="League Admin Dashboard"
+      userName={user?.name}
+      onLogout={logout}
+      navItems={[
+        { label: 'Dashboard', path: '/admin', icon: <HomeIcon /> },
+        { label: 'Teams & Rosters', path: '/admin/teams', icon: <TableIcon /> },
+      ]}
+    >
       {error && <p className="error">{error}</p>}
+
+      <div className="stat-tile-row">
+        <StatTile icon={<UsersIcon />} label="Active teams" value={activeTeamCount} />
+        <StatTile icon={<UserCogIcon />} label="Pending approvals" value={pendingTeams.length} />
+        <StatTile icon={<TransferIcon />} label="Awaiting League decision" value={pendingLeague.length} />
+        <StatTile icon={<TableIcon />} label="Total players" value={playerCount} />
+      </div>
 
       <WindowControls window={window_} token={token} onChanged={refresh} />
 
@@ -110,7 +124,7 @@ export function LeagueAdminDashboard() {
           </tbody>
         </table>
       </section>
-    </div>
+    </DashboardShell>
   );
 }
 
