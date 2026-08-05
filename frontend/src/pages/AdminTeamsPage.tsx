@@ -1,0 +1,173 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../auth/AuthContext';
+import { api, ApiError } from '../api/client';
+import type { Player, Team } from '../types';
+import { DashboardShell } from '../layout/DashboardShell';
+import { HomeIcon, TableIcon } from '../components/icons';
+
+const TRANSFER_CAP: Record<Player['originType'], number> = {
+  FREE_AGENT_ORIGIN: 1,
+  DIRECT_REGISTRATION: 2,
+};
+
+export function AdminTeamsPage() {
+  const { user, token, logout } = useAuth();
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([api.get<Team[]>('/teams', token), api.get<Player[]>('/players', token)])
+      .then(([teamsRes, playersRes]) => {
+        if (cancelled) return;
+        setTeams(teamsRes);
+        setPlayers(playersRes);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load teams data');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const rosterRows = useMemo(
+    () => teams.flatMap((team) => (team.roster ?? []).map((player) => ({ player, teamName: team.name }))),
+    [teams],
+  );
+
+  return (
+    <DashboardShell
+      title="Teams & Rosters"
+      userName={user?.name}
+      onLogout={logout}
+      navItems={[
+        { label: 'Dashboard', path: '/admin', icon: <HomeIcon /> },
+        { label: 'Teams & Rosters', path: '/admin/teams', icon: <TableIcon /> },
+      ]}
+    >
+      {error && <p className="error">{error}</p>}
+
+      <section className="card">
+        <h2>Teams ({teams.length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Players</th>
+              <th>Manager</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((t) => (
+              <tr key={t.id}>
+                <td>{t.name}</td>
+                <td>
+                  <span
+                    className={`badge ${t.status === 'ACTIVE' ? 'badge-good' : t.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}
+                  >
+                    {t.status}
+                  </span>
+                </td>
+                <td>{t.roster?.length ?? 0}</td>
+                <td>{t.ownerAccount?.name ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>Team Rosters ({rosterRows.length} players)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Team</th>
+              <th>Status</th>
+              <th>Origin</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rosterRows.map(({ player, teamName }) => (
+              <tr key={player.id}>
+                <td>{player.name}</td>
+                <td>{teamName}</td>
+                <td>{player.status}</td>
+                <td>{player.originType}</td>
+                <td>{player.transferValue != null ? `R${player.transferValue}` : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>Managers ({teams.filter((t) => t.ownerAccount).length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Manager</th>
+              <th>Email</th>
+              <th>Team</th>
+              <th>Team status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams
+              .filter((t) => t.ownerAccount)
+              .map((t) => (
+                <tr key={t.id}>
+                  <td>{t.ownerAccount!.name}</td>
+                  <td>{t.ownerAccount!.email}</td>
+                  <td>{t.name}</td>
+                  <td>
+                    <span
+                      className={`badge ${t.status === 'ACTIVE' ? 'badge-good' : t.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}
+                    >
+                      {t.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>Player transfer counts ({players.length})</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Team</th>
+              <th>Origin</th>
+              <th>Transfers used</th>
+              <th>Season cap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((p) => {
+              const cap = TRANSFER_CAP[p.originType];
+              return (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  <td>{p.currentTeam?.name ?? '— unattached —'}</td>
+                  <td>{p.originType}</td>
+                  <td>{p.transferCount}</td>
+                  <td>
+                    {p.transferCount}/{cap}
+                    {p.transferCount >= cap && <span className="badge badge-bad"> at cap</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+    </DashboardShell>
+  );
+}

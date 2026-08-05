@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TeamRegistrationForm } from '../components/TeamRegistrationForm';
+import { ThemeToggleButton } from '../components/ThemeToggleButton';
 
 export function TeamRegisterPage() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
     <div className="centered-page">
+      <ThemeToggleButton className="theme-toggle-corner" />
       <div className="card" style={{ maxWidth: 480 }}>
         <h1>Register your team</h1>
         {submitted ? (

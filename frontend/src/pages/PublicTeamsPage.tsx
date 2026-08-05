@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { Team } from '../types';
+import { StatTile } from '../components/StatTile';
+import { ThemeToggleButton } from '../components/ThemeToggleButton';
+import { TableIcon, UsersIcon } from '../components/icons';
 
 export function PublicTeamsPage() {
   const [teams, setTeams] = useState<Team[] | null>(null);
@@ -22,15 +25,28 @@ export function PublicTeamsPage() {
     };
   }, []);
 
+  const totalPlayers = useMemo(() => teams?.reduce((sum, t) => sum + (t.roster?.length ?? 0), 0) ?? 0, [teams]);
+
   return (
     <div className="page">
       <header className="topbar">
         <strong>5quadLeague — Teams</strong>
-        <Link to="/login">Sign in</Link>
+        <span className="shell-topbar-actions">
+          <ThemeToggleButton />
+          <Link to="/login">Sign in</Link>
+        </span>
       </header>
 
       {error && <p className="error">{error}</p>}
       {!teams && !error && <p>Loading…</p>}
+
+      {teams && (
+        <div className="stat-tile-row">
+          <StatTile icon={<UsersIcon />} label="Active teams" value={teams.length} />
+          <StatTile icon={<TableIcon />} label="Total players" value={totalPlayers} />
+        </div>
+      )}
+
       {teams && teams.length === 0 && <p className="muted">No active teams yet.</p>}
 
       {teams?.map((team) => (

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
+import { ThemeToggleButton } from '../components/ThemeToggleButton';
 
 export function LoginPage() {
   const { login, user } = useAuth();
@@ -30,6 +31,7 @@ export function LoginPage() {
 
   return (
     <div className="centered-page">
+      <ThemeToggleButton className="theme-toggle-corner" />
       <form className="card" onSubmit={handleSubmit}>
         <h1>5quadLeague Transfer System</h1>
         <p className="muted">Sign in as a Team Owner or League Admin.</p>
