@@ -5,6 +5,7 @@ import { PublicTeamsPage } from './pages/PublicTeamsPage';
 import { TeamOwnerDashboard } from './pages/TeamOwnerDashboard';
 import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
+import { HowTransfersWorkPage } from './pages/HowTransfersWorkPage';
 import { RequireAuth } from './auth/RequireAuth';
 
 export default function App() {
@@ -19,6 +20,14 @@ export default function App() {
         element={
           <RequireAuth role="TEAM_OWNER">
             <TeamOwnerDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/how-it-works"
+        element={
+          <RequireAuth role="TEAM_OWNER">
+            <HowTransfersWorkPage />
           </RequireAuth>
         }
       />
