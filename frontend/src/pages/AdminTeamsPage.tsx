@@ -4,11 +4,24 @@ import { api, ApiError } from '../api/client';
 import type { Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TableIcon } from '../components/icons';
+import { PlayerAvatar } from '../components/PlayerAvatar';
 
 const TRANSFER_CAP: Record<Player['originType'], number> = {
   FREE_AGENT_ORIGIN: 1,
   DIRECT_REGISTRATION: 2,
 };
+
+/** Read-only counterpart to the Team Owner dashboard's editable avatar+name cell. */
+function PlayerNameCell({ player }: { player: Player }) {
+  return (
+    <span className="player-name-cell">
+      <span className="player-avatar-wrap">
+        <PlayerAvatar avatarUrl={player.avatarUrl} />
+      </span>
+      <span>{player.name}</span>
+    </span>
+  );
+}
 
 export function AdminTeamsPage() {
   const { user, token, logout } = useAuth();
@@ -94,7 +107,9 @@ export function AdminTeamsPage() {
           <tbody>
             {rosterRows.map(({ player, teamName }) => (
               <tr key={player.id}>
-                <td>{player.name}</td>
+                <td>
+                  <PlayerNameCell player={player} />
+                </td>
                 <td>{teamName}</td>
                 <td>{player.status}</td>
                 <td>{player.originType}</td>
@@ -154,7 +169,9 @@ export function AdminTeamsPage() {
               const cap = TRANSFER_CAP[p.originType];
               return (
                 <tr key={p.id}>
-                  <td>{p.name}</td>
+                  <td>
+                    <PlayerNameCell player={p} />
+                  </td>
                   <td>{p.currentTeam?.name ?? '— unattached —'}</td>
                   <td>{p.originType}</td>
                   <td>{p.transferCount}</td>
