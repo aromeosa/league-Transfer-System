@@ -322,6 +322,159 @@ function requestTypeFor(player: Player): RequestType {
   return 'CLUB_TRANSFER';
 }
 
+interface PlayerGroup {
+  key: string;
+  label: string;
+  players: Player[];
+}
+
+/** Free Agents float to the top (no releasing team's approval needed to sign one). */
+function groupPlayersByTeam(players: Player[]): PlayerGroup[] {
+  const groups = new Map<string, PlayerGroup>();
+  for (const p of players) {
+    const key = p.currentTeam?.id ?? 'free-agents';
+    const label = p.currentTeam?.name ?? 'Free Agents';
+    if (!groups.has(key)) groups.set(key, { key, label, players: [] });
+    groups.get(key)!.players.push(p);
+  }
+  return Array.from(groups.values()).sort((a, b) =>
+    a.key === 'free-agents' ? -1 : b.key === 'free-agents' ? 1 : a.label.localeCompare(b.label),
+  );
+}
+
+function PlayerPicker({
+  players,
+  value,
+  onChange,
+  disabled,
+}: {
+  players: Player[];
+  value: string;
+  onChange: (playerId: string) => void;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const selected = players.find((p) => p.id === value);
+  const groups = useMemo(() => groupPlayersByTeam(players), [players]);
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? players.filter((p) => p.name.toLowerCase().includes(q)) : [];
+  }, [players, query]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
+
+  function toggleOpen() {
+    if (disabled) return;
+    setOpen((wasOpen) => {
+      if (!wasOpen) {
+        setQuery('');
+        setTimeout(() => searchRef.current?.focus(), 0);
+      }
+      return !wasOpen;
+    });
+  }
+
+  function select(player: Player) {
+    onChange(player.id);
+    setOpen(false);
+  }
+
+  function toggleGroup(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  return (
+    <div className="player-picker" ref={wrapRef}>
+      <button
+        type="button"
+        className="player-picker-trigger"
+        onClick={toggleOpen}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        {selected
+          ? `${selected.name} (${selected.status}${selected.currentTeam ? ` — ${selected.currentTeam.name}` : ''})`
+          : 'Select a player…'}
+      </button>
+      {open && (
+        <div className="player-picker-panel">
+          <input
+            ref={searchRef}
+            type="text"
+            className="player-picker-search"
+            placeholder="Search players by name…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className="player-picker-list">
+            {query.trim() ? (
+              matches.length === 0 ? (
+                <p className="muted player-picker-empty">No players match &ldquo;{query}&rdquo;.</p>
+              ) : (
+                matches.map((p) => (
+                  <button type="button" key={p.id} className="player-picker-option" onClick={() => select(p)}>
+                    <span>{p.name}</span>
+                    <span className="muted">
+                      {p.status}
+                      {p.currentTeam ? ` — ${p.currentTeam.name}` : ''}
+                    </span>
+                  </button>
+                ))
+              )
+            ) : groups.length === 0 ? (
+              <p className="muted player-picker-empty">No players available.</p>
+            ) : (
+              groups.map((g) => (
+                <div key={g.key} className="player-picker-group">
+                  <button type="button" className="player-picker-group-header" onClick={() => toggleGroup(g.key)}>
+                    <span>{g.label}</span>
+                    <span className="muted">{g.players.length}</span>
+                  </button>
+                  {expanded.has(g.key) && (
+                    <div className="player-picker-group-players">
+                      {g.players.map((p) => (
+                        <button type="button" key={p.id} className="player-picker-option" onClick={() => select(p)}>
+                          <span>{p.name}</span>
+                          <span className="muted">{p.status}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SubmitRequestForm({
   available,
   windowOpen,
@@ -363,17 +516,7 @@ function SubmitRequestForm({
       <form onSubmit={handleSubmit} className="inline-form">
         <label>
           Player
-          <select value={playerId} onChange={(e) => setPlayerId(e.target.value)} required disabled={!windowOpen}>
-            <option value="" disabled>
-              Select a player…
-            </option>
-            {available.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.status}
-                {p.currentTeam ? ` — ${p.currentTeam.name}` : ''})
-              </option>
-            ))}
-          </select>
+          <PlayerPicker players={available} value={playerId} onChange={setPlayerId} disabled={!windowOpen} />
         </label>
         <label>
           Proposed fee (R500–R5,000)
