@@ -6,6 +6,19 @@ import { api, ApiError } from '../api/client';
 const MIN_PLAYERS = 5;
 const MAX_PLAYERS = 15;
 
+// Mirrors the backend's valuation range (§1.3 / BusinessRules.VALUATION_MIN/MAX).
+const VALUE_MIN = 500;
+const VALUE_MAX = 5000;
+
+interface PlayerRow {
+  name: string;
+  value: string;
+}
+
+function emptyRoster(): PlayerRow[] {
+  return Array.from({ length: MIN_PLAYERS }, () => ({ name: '', value: '' }));
+}
+
 /**
  * Shared by the League Admin's direct-create flow (POST /teams, immediately ACTIVE)
  * and the public self-registration page (POST /teams/register, PENDING_APPROVAL) —
@@ -26,16 +39,20 @@ export function TeamRegistrationForm({
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
-  const [playerNames, setPlayerNames] = useState(Array(MIN_PLAYERS).fill(''));
+  const [players, setPlayers] = useState<PlayerRow[]>(emptyRoster);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function addPlayer() {
-    setPlayerNames((names) => (names.length >= MAX_PLAYERS ? names : [...names, '']));
+    setPlayers((rows) => (rows.length >= MAX_PLAYERS ? rows : [...rows, { name: '', value: '' }]));
   }
 
   function removePlayer(index: number) {
-    setPlayerNames((names) => (names.length <= MIN_PLAYERS ? names : names.filter((_, i) => i !== index)));
+    setPlayers((rows) => (rows.length <= MIN_PLAYERS ? rows : rows.filter((_, i) => i !== index)));
+  }
+
+  function updatePlayer(index: number, field: keyof PlayerRow, fieldValue: string) {
+    setPlayers((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: fieldValue } : row)));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -48,7 +65,9 @@ export function TeamRegistrationForm({
         {
           name,
           owner: { name: ownerName, email: ownerEmail, password: ownerPassword },
-          players: playerNames.filter((n) => n.trim()).map((n) => ({ name: n })),
+          players: players
+            .filter((p) => p.name.trim())
+            .map((p) => ({ name: p.name, transferValue: p.value ? Number(p.value) : undefined })),
         },
         token,
       );
@@ -56,7 +75,7 @@ export function TeamRegistrationForm({
       setOwnerName('');
       setOwnerEmail('');
       setOwnerPassword('');
-      setPlayerNames(Array(MIN_PLAYERS).fill(''));
+      setPlayers(emptyRoster());
       onSuccess();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to register team');
@@ -92,25 +111,35 @@ export function TeamRegistrationForm({
         </label>
         <fieldset>
           <legend>
-            Initial roster ({playerNames.length}/{MAX_PLAYERS}, {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players)
+            Initial roster ({players.length}/{MAX_PLAYERS}, {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players)
           </legend>
-          {playerNames.map((value, i) => (
+          <p className="muted">
+            Set each player's transfer value (R{VALUE_MIN}&ndash;R{VALUE_MAX}). Once your team is active, values can
+            only be changed while a transfer window is open.
+          </p>
+          {players.map((row, i) => (
             <div className="player-row" key={i}>
               <input
-                value={value}
+                value={row.name}
                 placeholder={`Player ${i + 1} name`}
-                onChange={(e) => {
-                  const next = [...playerNames];
-                  next[i] = e.target.value;
-                  setPlayerNames(next);
-                }}
+                onChange={(e) => updatePlayer(i, 'name', e.target.value)}
+                required
+              />
+              <input
+                type="number"
+                className="player-value-input"
+                value={row.value}
+                placeholder="Value"
+                min={VALUE_MIN}
+                max={VALUE_MAX}
+                onChange={(e) => updatePlayer(i, 'value', e.target.value)}
                 required
               />
               <button
                 type="button"
                 className="remove-player-btn"
                 onClick={() => removePlayer(i)}
-                disabled={playerNames.length <= MIN_PLAYERS}
+                disabled={players.length <= MIN_PLAYERS}
                 aria-label={`Remove player ${i + 1}`}
               >
                 &times;
@@ -121,7 +150,7 @@ export function TeamRegistrationForm({
             type="button"
             className="btn-secondary"
             onClick={addPlayer}
-            disabled={playerNames.length >= MAX_PLAYERS}
+            disabled={players.length >= MAX_PLAYERS}
           >
             + Add player
           </button>
