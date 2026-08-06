@@ -477,6 +477,46 @@ button + button {
   padding: 0 0.4rem;
 }
 
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-row input {
+  flex: 1;
+}
+
+.remove-player-btn {
+  flex: none;
+  padding: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  line-height: 1;
+  font-size: 1.1rem;
+  border-radius: 999px;
+  background: var(--bad-soft);
+  color: var(--bad);
+  box-shadow: none;
+}
+
+.remove-player-btn:disabled {
+  background: var(--surface-secondary);
+  color: var(--text-muted);
+}
+
+.btn-secondary {
+  background: none;
+  color: var(--accent);
+  border: 1px dashed var(--border);
+  box-shadow: none;
+  align-self: flex-start;
+}
+
+.btn-secondary:disabled {
+  color: var(--text-muted);
+}
+
 /* ---------- Request rows / banners / badges ---------- */
 
 .request-row {

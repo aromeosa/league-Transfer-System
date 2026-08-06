@@ -2,6 +2,10 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
 
+// Mirrors the backend's roster size constraint (§4.2 / BusinessRules.ROSTER_MIN/MAX).
+const MIN_PLAYERS = 5;
+const MAX_PLAYERS = 15;
+
 /**
  * Shared by the League Admin's direct-create flow (POST /teams, immediately ACTIVE)
  * and the public self-registration page (POST /teams/register, PENDING_APPROVAL) —
@@ -22,9 +26,17 @@ export function TeamRegistrationForm({
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
-  const [playerNames, setPlayerNames] = useState(['', '', '', '', '']);
+  const [playerNames, setPlayerNames] = useState(Array(MIN_PLAYERS).fill(''));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function addPlayer() {
+    setPlayerNames((names) => (names.length >= MAX_PLAYERS ? names : [...names, '']));
+  }
+
+  function removePlayer(index: number) {
+    setPlayerNames((names) => (names.length <= MIN_PLAYERS ? names : names.filter((_, i) => i !== index)));
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -44,7 +56,7 @@ export function TeamRegistrationForm({
       setOwnerName('');
       setOwnerEmail('');
       setOwnerPassword('');
-      setPlayerNames(['', '', '', '', '']);
+      setPlayerNames(Array(MIN_PLAYERS).fill(''));
       onSuccess();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to register team');
@@ -79,20 +91,40 @@ export function TeamRegistrationForm({
           />
         </label>
         <fieldset>
-          <legend>Initial roster (minimum 5 players)</legend>
+          <legend>
+            Initial roster ({playerNames.length}/{MAX_PLAYERS}, {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players)
+          </legend>
           {playerNames.map((value, i) => (
-            <input
-              key={i}
-              value={value}
-              placeholder={`Player ${i + 1} name`}
-              onChange={(e) => {
-                const next = [...playerNames];
-                next[i] = e.target.value;
-                setPlayerNames(next);
-              }}
-              required
-            />
+            <div className="player-row" key={i}>
+              <input
+                value={value}
+                placeholder={`Player ${i + 1} name`}
+                onChange={(e) => {
+                  const next = [...playerNames];
+                  next[i] = e.target.value;
+                  setPlayerNames(next);
+                }}
+                required
+              />
+              <button
+                type="button"
+                className="remove-player-btn"
+                onClick={() => removePlayer(i)}
+                disabled={playerNames.length <= MIN_PLAYERS}
+                aria-label={`Remove player ${i + 1}`}
+              >
+                &times;
+              </button>
+            </div>
           ))}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={addPlayer}
+            disabled={playerNames.length >= MAX_PLAYERS}
+          >
+            + Add player
+          </button>
         </fieldset>
         <button type="submit" disabled={submitting}>
           {submitting ? 'Submitting…' : submitLabel}
