@@ -43,6 +43,10 @@ export class Player {
   @Column({ name: 'transfer_count', type: 'int', default: 0 })
   transferCount: number;
 
+  /** Data URL (client resizes/re-encodes before upload) — no external file storage needed. */
+  @Column({ name: 'avatar_url', type: 'text', nullable: true })
+  avatarUrl?: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

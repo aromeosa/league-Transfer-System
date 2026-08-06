@@ -1,10 +1,15 @@
 import 'dotenv/config';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Raised above Express's 100kb default to fit base64-encoded player photo uploads
+  // (client resizes to a small thumbnail first, but this leaves headroom).
+  app.useBodyParser('json', { limit: '2mb' });
 
   app.useGlobalPipes(
     new ValidationPipe({

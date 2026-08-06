@@ -33,14 +33,7 @@ export class PlayersService {
    * (mirrors the roster-lock rule; see HowTransfersWorkPage's plain-language summary).
    */
   async updateValue(playerId: string, transferValue: number, actingUser: AuthenticatedUser): Promise<Player> {
-    if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
-      throw new ForbiddenException('Only a team owner may set a player value');
-    }
-
-    const player = await this.playerRepo.findOne({ where: { id: playerId }, relations: ['currentTeam'] });
-    if (!player || player.currentTeam?.id !== actingUser.teamId) {
-      throw new NotFoundException('Player not found on your roster');
-    }
+    const player = await this.getOwnedPlayer(playerId, actingUser);
 
     const openWindow = await this.transferWindowsService.getCurrent();
     if (!openWindow) {
@@ -49,5 +42,24 @@ export class PlayersService {
 
     player.transferValue = transferValue;
     return this.playerRepo.save(player);
+  }
+
+  /** Team Owner uploads/replaces a photo for one of their own players. Not window-locked. */
+  async updatePhoto(playerId: string, photoDataUrl: string, actingUser: AuthenticatedUser): Promise<Player> {
+    const player = await this.getOwnedPlayer(playerId, actingUser);
+    player.avatarUrl = photoDataUrl;
+    return this.playerRepo.save(player);
+  }
+
+  private async getOwnedPlayer(playerId: string, actingUser: AuthenticatedUser): Promise<Player> {
+    if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
+      throw new ForbiddenException('Only a team owner may manage their own players');
+    }
+
+    const player = await this.playerRepo.findOne({ where: { id: playerId }, relations: ['currentTeam'] });
+    if (!player || player.currentTeam?.id !== actingUser.teamId) {
+      throw new NotFoundException('Player not found on your roster');
+    }
+    return player;
   }
 }
