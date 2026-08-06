@@ -610,6 +610,102 @@ button + button {
   opacity: 0.6;
 }
 
+/* ---------- Player picker (search / browse-by-team combobox) ---------- */
+
+.player-picker {
+  position: relative;
+  min-width: 260px;
+}
+
+.player-picker-trigger {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-weight: 400;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-secondary);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.player-picker-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.player-picker-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  min-width: 300px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: 0.6rem;
+  z-index: 30;
+}
+
+.player-picker-search {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.player-picker-list {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.player-picker-empty {
+  padding: 0.4rem;
+  margin: 0;
+}
+
+.player-picker-group-header,
+.player-picker-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  box-shadow: none;
+  color: var(--text);
+  font-weight: 500;
+  font-size: 0.86rem;
+}
+
+.player-picker-group-header:hover,
+.player-picker-option:hover {
+  background: var(--surface-secondary);
+}
+
+.player-picker-group-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-left: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+
+.player-picker-option span:last-child {
+  font-size: 0.76rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
 /* ---------- Request rows / banners / badges ---------- */
 
 .request-row {
