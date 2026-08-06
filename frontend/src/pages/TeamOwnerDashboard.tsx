@@ -6,7 +6,8 @@ import type { Player, RequestType, Team, TransferRequest, TransferWindow } from 
 import { StatusBadge } from '../components/StatusBadge';
 import { StatTile } from '../components/StatTile';
 import { DashboardShell } from '../layout/DashboardShell';
-import { CameraIcon, HomeIcon, TableIcon, TransferIcon, UserIcon, UsersIcon } from '../components/icons';
+import { CameraIcon, HomeIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { PlayerAvatar } from '../components/PlayerAvatar';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
 
 export function TeamOwnerDashboard() {
@@ -216,13 +217,7 @@ function PlayerAvatarCell({
         aria-label={`Upload a photo for ${player.name}`}
         title="Upload a photo"
       >
-        {player.avatarUrl ? (
-          <img src={player.avatarUrl} alt="" className="player-avatar" />
-        ) : (
-          <span className="player-avatar-placeholder">
-            <UserIcon />
-          </span>
-        )}
+        <PlayerAvatar avatarUrl={player.avatarUrl} />
         <span className="player-avatar-badge">
           <CameraIcon />
         </span>
