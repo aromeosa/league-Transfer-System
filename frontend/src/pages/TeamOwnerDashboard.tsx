@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, RequestType, Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { StatTile } from '../components/StatTile';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { CameraIcon, HomeIcon, TableIcon, TransferIcon, UserIcon, UsersIcon } from '../components/icons';
+import { resizeImageToDataUrl } from '../utils/resizeImage';
 
 export function TeamOwnerDashboard() {
   const { user, token, logout } = useAuth();
@@ -127,7 +128,9 @@ export function TeamOwnerDashboard() {
           <tbody>
             {team.roster?.map((p) => (
               <tr key={p.id}>
-                <td>{p.name}</td>
+                <td>
+                  <PlayerAvatarCell player={p} token={token} onUpdated={refresh} />
+                </td>
                 <td>{p.status}</td>
                 <td>{p.originType}</td>
                 <td>
@@ -170,6 +173,71 @@ function WindowBanner({ window: w }: { window: TransferWindow | null }) {
       Transfer window is <strong>{w.status}</strong> ({new Date(w.opensAt).toLocaleDateString()} –{' '}
       {new Date(w.closesAt).toLocaleDateString()})
     </p>
+  );
+}
+
+function PlayerAvatarCell({
+  player,
+  token,
+  onUpdated,
+}: {
+  player: Player;
+  token: string | null;
+  onUpdated: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const photoDataUrl = await resizeImageToDataUrl(file);
+      await api.patch(`/players/${player.id}/photo`, { photoDataUrl }, token);
+      onUpdated();
+    } catch (err) {
+      setError(err instanceof ApiError || err instanceof Error ? err.message : 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <span className="player-name-cell">
+      <button
+        type="button"
+        className="player-avatar-wrap editable"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        aria-label={`Upload a photo for ${player.name}`}
+        title="Upload a photo"
+      >
+        {player.avatarUrl ? (
+          <img src={player.avatarUrl} alt="" className="player-avatar" />
+        ) : (
+          <span className="player-avatar-placeholder">
+            <UserIcon />
+          </span>
+        )}
+        <span className="player-avatar-badge">
+          <CameraIcon />
+        </span>
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      <span>
+        {player.name}
+        {error && (
+          <>
+            <br />
+            <span className="error">{error}</span>
+          </>
+        )}
+      </span>
+    </span>
   );
 }
 

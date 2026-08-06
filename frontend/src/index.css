@@ -540,6 +540,76 @@ button + button {
   font-size: 0.78rem;
 }
 
+.player-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.player-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.player-avatar-wrap.editable {
+  cursor: pointer;
+}
+
+.player-avatar,
+.player-avatar-placeholder {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.player-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.player-avatar-placeholder svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.player-avatar-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+}
+
+.player-avatar-badge svg {
+  width: 0.55rem;
+  height: 0.55rem;
+  stroke-width: 2.4;
+}
+
+.player-avatar-wrap:disabled .player-avatar-badge {
+  opacity: 0.6;
+}
+
 /* ---------- Request rows / banners / badges ---------- */
 
 .request-row {

@@ -87,6 +87,24 @@ export function MenuIcon(props: IconProps) {
   );
 }
 
+export function UserIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="8.25" r="3.75" />
+      <path d="M4.5 20c0-3.6 3.36-6.25 7.5-6.25S19.5 16.4 19.5 20" />
+    </svg>
+  );
+}
+
+export function CameraIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.7A1 1 0 0 1 9.36 4.8h5.28a1 1 0 0 1 .86.5L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" />
+      <circle cx="12" cy="13" r="3.25" />
+    </svg>
+  );
+}
+
 export function LogOutIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
