@@ -1,7 +1,13 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PlayerStatus } from '../entities';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { AuthenticatedUser } from '../auth/jwt-payload.interface';
+import { ActiveTeamGuard } from '../teams/active-team.guard';
+import { PlayerStatus, UserRole } from '../entities';
 import { PlayersService } from './players.service';
+import { UpdatePlayerValueDto } from './dto/update-player-value.dto';
 
 @Controller('players')
 @UseGuards(JwtAuthGuard)
@@ -11,5 +17,16 @@ export class PlayersController {
   @Get()
   findAll(@Query('status') status?: PlayerStatus, @Query('unattached') unattached?: string) {
     return this.playersService.findByStatus(status, unattached === 'true');
+  }
+
+  @Patch(':id/value')
+  @UseGuards(RolesGuard, ActiveTeamGuard)
+  @Roles(UserRole.TEAM_OWNER)
+  updateValue(
+    @Param('id') id: string,
+    @Body() dto: UpdatePlayerValueDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.playersService.updateValue(id, dto.transferValue, user);
   }
 }

@@ -487,6 +487,10 @@ button + button {
   flex: 1;
 }
 
+.player-row input.player-value-input {
+  flex: 0 0 6.5rem;
+}
+
 .remove-player-btn {
   flex: none;
   padding: 0;
@@ -515,6 +519,25 @@ button + button {
 
 .btn-secondary:disabled {
   color: var(--text-muted);
+}
+
+.btn-small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+.player-value-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.player-value-cell .player-value-input {
+  width: 5.5rem;
+}
+
+.player-value-cell .error {
+  font-size: 0.78rem;
 }
 
 /* ---------- Request rows / banners / badges ---------- */

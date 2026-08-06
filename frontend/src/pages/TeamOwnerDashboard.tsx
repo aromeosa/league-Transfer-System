@@ -109,6 +109,11 @@ export function TeamOwnerDashboard() {
 
       <section className="card">
         <h2>Roster ({team.roster?.length ?? 0})</h2>
+        <p className="muted">
+          {window_?.status === 'OPEN'
+            ? 'The transfer window is open — you can adjust player values below.'
+            : 'Player values are locked until the next transfer window opens.'}
+        </p>
         <table>
           <thead>
             <tr>
@@ -125,7 +130,14 @@ export function TeamOwnerDashboard() {
                 <td>{p.name}</td>
                 <td>{p.status}</td>
                 <td>{p.originType}</td>
-                <td>{p.transferValue != null ? `R${p.transferValue}` : '—'}</td>
+                <td>
+                  <PlayerValueCell
+                    player={p}
+                    editable={window_?.status === 'OPEN'}
+                    token={token}
+                    onUpdated={refresh}
+                  />
+                </td>
                 <td>{p.transferCount}</td>
               </tr>
             ))}
@@ -158,6 +170,81 @@ function WindowBanner({ window: w }: { window: TransferWindow | null }) {
       Transfer window is <strong>{w.status}</strong> ({new Date(w.opensAt).toLocaleDateString()} –{' '}
       {new Date(w.closesAt).toLocaleDateString()})
     </p>
+  );
+}
+
+const VALUE_MIN = 500;
+const VALUE_MAX = 5000;
+
+function PlayerValueCell({
+  player,
+  editable,
+  token,
+  onUpdated,
+}: {
+  player: Player;
+  editable: boolean;
+  token: string | null;
+  onUpdated: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(String(player.transferValue ?? ''));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!editing) {
+    return (
+      <span className="player-value-cell">
+        {player.transferValue != null ? `R${player.transferValue}` : '—'}
+        {editable && (
+          <button
+            type="button"
+            className="btn-secondary btn-small"
+            onClick={() => {
+              setValue(String(player.transferValue ?? ''));
+              setError(null);
+              setEditing(true);
+            }}
+          >
+            Edit
+          </button>
+        )}
+      </span>
+    );
+  }
+
+  async function save() {
+    setError(null);
+    setSaving(true);
+    try {
+      await api.patch(`/players/${player.id}/value`, { transferValue: Number(value) }, token);
+      setEditing(false);
+      onUpdated();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update value');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <span className="player-value-cell">
+      <input
+        type="number"
+        className="player-value-input"
+        min={VALUE_MIN}
+        max={VALUE_MAX}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button type="button" disabled={saving} onClick={save}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+      <button type="button" className="btn-secondary btn-small" disabled={saving} onClick={() => setEditing(false)}>
+        Cancel
+      </button>
+      {error && <span className="error">{error}</span>}
+    </span>
   );
 }
 
