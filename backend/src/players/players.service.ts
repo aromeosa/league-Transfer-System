@@ -4,6 +4,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, UserAccount, UserRole } from '../entities';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
+import { isUniqueViolation } from '../common/db-errors.util';
 import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
 
 @Injectable()
@@ -57,36 +58,47 @@ export class PlayersService {
    * in and accept/reject a team's signing offer themselves (see TransferRequestsService).
    */
   async registerFreeAgent(name: string, position: PlayerPosition, email: string, password: string): Promise<Player> {
+    // Checked up front for a friendly error in the common case; the catch below is the
+    // real guarantee — it closes the race where two signups with the same email both
+    // pass this check before either commits (see TeamsService.createTeamRecord for the
+    // same pattern, since both roles share the one user_accounts.email uniqueness).
     const existing = await this.dataSource.getRepository(UserAccount).findOne({ where: { email } });
     if (existing) {
       throw new ConflictException('A user with this email already exists');
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const player = await manager.save(
-        Player,
-        manager.create(Player, {
-          name,
-          position,
-          status: PlayerStatus.FREE_AGENT,
-          originType: PlayerOrigin.FREE_AGENT_ORIGIN,
-        }),
-      );
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const player = await manager.save(
+          Player,
+          manager.create(Player, {
+            name,
+            position,
+            status: PlayerStatus.FREE_AGENT,
+            originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+          }),
+        );
 
-      const passwordHash = await bcrypt.hash(password, 10);
-      await manager.save(
-        UserAccount,
-        manager.create(UserAccount, {
-          name,
-          email,
-          passwordHash,
-          role: UserRole.FREE_AGENT,
-          player,
-        }),
-      );
+        const passwordHash = await bcrypt.hash(password, 10);
+        await manager.save(
+          UserAccount,
+          manager.create(UserAccount, {
+            name,
+            email,
+            passwordHash,
+            role: UserRole.FREE_AGENT,
+            player,
+          }),
+        );
 
-      return player;
-    });
+        return player;
+      });
+    } catch (err) {
+      if (isUniqueViolation(err, 'email')) {
+        throw new ConflictException('A user with this email already exists');
+      }
+      throw err;
+    }
   }
 
   /** Team Owner uploads/replaces a photo for one of their own players. Not window-locked. */

@@ -12,6 +12,7 @@ import {
   UserAccount,
   UserRole,
 } from '../entities';
+import { isUniqueViolation } from '../common/db-errors.util';
 import { CreateTeamDto } from './dto/create-team.dto';
 
 @Injectable()
@@ -32,6 +33,10 @@ export class TeamsService {
   }
 
   private async createTeamRecord(dto: CreateTeamDto, status: TeamStatus): Promise<Team> {
+    // Checked up front for a friendly error in the common case; the catch below is the
+    // real guarantee — it closes the race where two signups with the same email both
+    // pass this check before either commits (see PlayersService.registerFreeAgent for
+    // the same pattern, since both roles share the one user_accounts.email uniqueness).
     const existingOwner = await this.dataSource
       .getRepository(UserAccount)
       .findOne({ where: { email: dto.owner.email } });
@@ -39,41 +44,48 @@ export class TeamsService {
       throw new ConflictException('A user with this email already exists');
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const team = await manager.save(Team, manager.create(Team, { name: dto.name, status }));
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const team = await manager.save(Team, manager.create(Team, { name: dto.name, status }));
 
-      const passwordHash = await bcrypt.hash(dto.owner.password, 10);
-      await manager.save(
-        UserAccount,
-        manager.create(UserAccount, {
-          name: dto.owner.name,
-          email: dto.owner.email,
-          passwordHash,
-          role: UserRole.TEAM_OWNER,
-          team,
-        }),
-      );
+        const passwordHash = await bcrypt.hash(dto.owner.password, 10);
+        await manager.save(
+          UserAccount,
+          manager.create(UserAccount, {
+            name: dto.owner.name,
+            email: dto.owner.email,
+            passwordHash,
+            role: UserRole.TEAM_OWNER,
+            team,
+          }),
+        );
 
-      const players = dto.players.map((p) =>
-        manager.create(Player, {
-          name: p.name,
-          currentTeam: team,
-          status: PlayerStatus.REGISTERED,
-          originType: PlayerOrigin.DIRECT_REGISTRATION,
-          transferValue: p.transferValue ?? null,
-          transferCount: 0,
-        }),
-      );
-      const savedPlayers = await manager.save(Player, players);
+        const players = dto.players.map((p) =>
+          manager.create(Player, {
+            name: p.name,
+            currentTeam: team,
+            status: PlayerStatus.REGISTERED,
+            originType: PlayerOrigin.DIRECT_REGISTRATION,
+            transferValue: p.transferValue ?? null,
+            transferCount: 0,
+          }),
+        );
+        const savedPlayers = await manager.save(Player, players);
 
-      const joinedAt = new Date();
-      await manager.save(
-        RosterHistory,
-        savedPlayers.map((player) => manager.create(RosterHistory, { player, team, joinedAt })),
-      );
+        const joinedAt = new Date();
+        await manager.save(
+          RosterHistory,
+          savedPlayers.map((player) => manager.create(RosterHistory, { player, team, joinedAt })),
+        );
 
-      return this.getTeam(team.id, manager.getRepository(Team));
-    });
+        return this.getTeam(team.id, manager.getRepository(Team));
+      });
+    } catch (err) {
+      if (isUniqueViolation(err, 'email')) {
+        throw new ConflictException('A user with this email already exists');
+      }
+      throw err;
+    }
   }
 
   async getTeam(teamId: string, repo: Repository<Team> = this.teamRepo): Promise<Team> {
