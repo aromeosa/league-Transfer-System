@@ -4,24 +4,13 @@ import { api, ApiError } from '../api/client';
 import type { Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TableIcon } from '../components/icons';
-import { PlayerAvatar } from '../components/PlayerAvatar';
+import { PlayerNameCell } from '../components/PlayerNameCell';
+import { FreeAgentsTable } from '../components/FreeAgentsTable';
 
 const TRANSFER_CAP: Record<Player['originType'], number> = {
   FREE_AGENT_ORIGIN: 1,
   DIRECT_REGISTRATION: 2,
 };
-
-/** Read-only counterpart to the Team Owner dashboard's editable avatar+name cell. */
-function PlayerNameCell({ player }: { player: Player }) {
-  return (
-    <span className="player-name-cell">
-      <span className="player-avatar-wrap">
-        <PlayerAvatar avatarUrl={player.avatarUrl} />
-      </span>
-      <span>{player.name}</span>
-    </span>
-  );
-}
 
 export function AdminTeamsPage() {
   const { user, token, logout } = useAuth();
@@ -49,6 +38,7 @@ export function AdminTeamsPage() {
     () => teams.flatMap((team) => (team.roster ?? []).map((player) => ({ player, teamName: team.name }))),
     [teams],
   );
+  const freeAgents = useMemo(() => players.filter((p) => p.status === 'FREE_AGENT'), [players]);
 
   return (
     <DashboardShell
@@ -90,6 +80,11 @@ export function AdminTeamsPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="card">
+        <h2>Free Agents ({freeAgents.length})</h2>
+        <FreeAgentsTable players={freeAgents} />
       </section>
 
       <section className="card">

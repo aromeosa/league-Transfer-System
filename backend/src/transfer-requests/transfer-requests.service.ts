@@ -306,7 +306,22 @@ export class TransferRequestsService {
       }
 
       const now = new Date();
-      const player = await manager.findOneOrFail(Player, { where: { id: request.player.id } });
+      const player = await manager.findOneOrFail(Player, { where: { id: request.player.id }, relations: ['currentTeam'] });
+
+      // A competing request for the same player may have already been approved while
+      // this one sat at PENDING_LEAGUE_APPROVAL — re-check the player's current state
+      // against what this request assumed at submission, rather than blindly
+      // reassigning and silently overwriting whoever won the earlier approval.
+      const stillAvailable = request.releasingTeam
+        ? player.currentTeam?.id === request.releasingTeam.id
+        : player.status === PlayerStatus.FREE_AGENT;
+
+      if (!stillAvailable) {
+        request.status = RequestStatus.CANCELLED_PLAYER_UNAVAILABLE;
+        request.decidedAt = now;
+        await manager.save(TransferRequest, request);
+        return manager.findOneOrFail(TransferRequest, { where: { id: requestId }, relations: DETAIL_RELATIONS });
+      }
 
       if (request.releasingTeam) {
         await manager.update(

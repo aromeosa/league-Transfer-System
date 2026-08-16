@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
-import type { Team } from '../types';
+import type { Player, Team } from '../types';
 import { StatTile } from '../components/StatTile';
 import { ThemeToggleButton } from '../components/ThemeToggleButton';
+import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { TableIcon, UsersIcon } from '../components/icons';
 
 export function PublicTeamsPage() {
   const [teams, setTeams] = useState<Team[] | null>(null);
+  const [freeAgents, setFreeAgents] = useState<Player[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .get<Team[]>('/teams/public')
-      .then((res) => {
-        if (!cancelled) setTeams(res);
+    Promise.all([api.get<Team[]>('/teams/public'), api.get<Player[]>('/players/free-agents')])
+      .then(([teamsRes, freeAgentsRes]) => {
+        if (cancelled) return;
+        setTeams(teamsRes);
+        setFreeAgents(freeAgentsRes);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load teams');
@@ -33,6 +36,7 @@ export function PublicTeamsPage() {
         <strong>5quadLeague — Teams</strong>
         <span className="shell-topbar-actions">
           <ThemeToggleButton />
+          <Link to="/free-agents">Free agents</Link>
           <Link to="/login">Sign in</Link>
         </span>
       </header>
@@ -44,7 +48,15 @@ export function PublicTeamsPage() {
         <div className="stat-tile-row">
           <StatTile icon={<UsersIcon />} label="Active teams" value={teams.length} />
           <StatTile icon={<TableIcon />} label="Total players" value={totalPlayers} />
+          <StatTile icon={<UsersIcon />} label="Free agents" value={freeAgents?.length ?? 0} />
         </div>
+      )}
+
+      {freeAgents && freeAgents.length > 0 && (
+        <section className="card">
+          <h2>Free Agents ({freeAgents.length})</h2>
+          <FreeAgentsTable players={freeAgents} />
+        </section>
       )}
 
       {teams && teams.length === 0 && <p className="muted">No active teams yet.</p>}

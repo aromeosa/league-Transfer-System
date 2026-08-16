@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { TeamRegisterPage } from './pages/TeamRegisterPage';
 import { PublicTeamsPage } from './pages/PublicTeamsPage';
+import { FreeAgentsPage } from './pages/FreeAgentsPage';
 import { TeamOwnerDashboard } from './pages/TeamOwnerDashboard';
 import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<TeamRegisterPage />} />
       <Route path="/teams" element={<PublicTeamsPage />} />
+      <Route path="/free-agents" element={<FreeAgentsPage />} />
       <Route
         path="/team"
         element={

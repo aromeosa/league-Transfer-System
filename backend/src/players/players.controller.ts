@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -9,19 +9,36 @@ import { PlayerStatus, UserRole } from '../entities';
 import { PlayersService } from './players.service';
 import { UpdatePlayerValueDto } from './dto/update-player-value.dto';
 import { UpdatePlayerPhotoDto } from './dto/update-player-photo.dto';
+import { RegisterFreeAgentDto } from './dto/register-free-agent.dto';
 
+/**
+ * Guards are per-method rather than class-level (unlike siblings guarded wholesale)
+ * because the Free Agent directory/signup routes must stay completely public.
+ */
 @Controller('players')
-@UseGuards(JwtAuthGuard)
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   findAll(@Query('status') status?: PlayerStatus, @Query('unattached') unattached?: string) {
     return this.playersService.findByStatus(status, unattached === 'true');
   }
 
+  /** Public directory — used by the Teams page and the Free Agents page, no auth required. */
+  @Get('free-agents')
+  findFreeAgents() {
+    return this.playersService.findFreeAgents();
+  }
+
+  /** Public self-signup — no auth, visible in the pool immediately (no approval workflow). */
+  @Post('free-agents')
+  registerFreeAgent(@Body() dto: RegisterFreeAgentDto) {
+    return this.playersService.registerFreeAgent(dto.name, dto.position);
+  }
+
   @Patch(':id/value')
-  @UseGuards(RolesGuard, ActiveTeamGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
   @Roles(UserRole.TEAM_OWNER)
   updateValue(
     @Param('id') id: string,
@@ -32,7 +49,7 @@ export class PlayersController {
   }
 
   @Patch(':id/photo')
-  @UseGuards(RolesGuard, ActiveTeamGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
   @Roles(UserRole.TEAM_OWNER)
   updatePhoto(
     @Param('id') id: string,

@@ -55,6 +55,9 @@ export function LoginPage() {
           New team? <Link to="/register">Register a new team</Link>
         </p>
         <p className="muted">
+          Free agent? <Link to="/free-agents">Sign up here</Link>
+        </p>
+        <p className="muted">
           <Link to="/teams">View league teams</Link>
         </p>
       </form>
