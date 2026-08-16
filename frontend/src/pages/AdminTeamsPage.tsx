@@ -6,6 +6,7 @@ import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TableIcon } from '../components/icons';
 import { PlayerNameCell } from '../components/PlayerNameCell';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
+import { CollapsibleList } from '../components/CollapsibleList';
 
 const TRANSFER_CAP: Record<Player['originType'], number> = {
   FREE_AGENT_ORIGIN: 1,
@@ -83,36 +84,38 @@ export function AdminTeamsPage() {
       </section>
 
       <section className="card">
-        <h2>Free Agents ({freeAgents.length})</h2>
         <FreeAgentsTable players={freeAgents} />
       </section>
 
       <section className="card">
-        <h2>Team Rosters ({rosterRows.length} players)</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Team</th>
-              <th>Status</th>
-              <th>Origin</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rosterRows.map(({ player, teamName }) => (
-              <tr key={player.id}>
-                <td>
-                  <PlayerNameCell player={player} />
-                </td>
-                <td>{teamName}</td>
-                <td>{player.status}</td>
-                <td>{player.originType}</td>
-                <td>{player.transferValue != null ? `R${player.transferValue}` : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <CollapsibleList label="Team Rosters" items={rosterRows} getName={(row) => row.player.name}>
+          {(filtered) => (
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Team</th>
+                  <th>Status</th>
+                  <th>Origin</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(({ player, teamName }) => (
+                  <tr key={player.id}>
+                    <td>
+                      <PlayerNameCell player={player} />
+                    </td>
+                    <td>{teamName}</td>
+                    <td>{player.status}</td>
+                    <td>{player.originType}</td>
+                    <td>{player.transferValue != null ? `R${player.transferValue}` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CollapsibleList>
       </section>
 
       <section className="card">
@@ -148,37 +151,40 @@ export function AdminTeamsPage() {
       </section>
 
       <section className="card">
-        <h2>Player transfer counts ({players.length})</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Team</th>
-              <th>Origin</th>
-              <th>Transfers used</th>
-              <th>Season cap</th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((p) => {
-              const cap = TRANSFER_CAP[p.originType];
-              return (
-                <tr key={p.id}>
-                  <td>
-                    <PlayerNameCell player={p} />
-                  </td>
-                  <td>{p.currentTeam?.name ?? '— unattached —'}</td>
-                  <td>{p.originType}</td>
-                  <td>{p.transferCount}</td>
-                  <td>
-                    {p.transferCount}/{cap}
-                    {p.transferCount >= cap && <span className="badge badge-bad"> at cap</span>}
-                  </td>
+        <CollapsibleList label="Player transfer counts" items={players} getName={(p) => p.name}>
+          {(filtered) => (
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Team</th>
+                  <th>Origin</th>
+                  <th>Transfers used</th>
+                  <th>Season cap</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const cap = TRANSFER_CAP[p.originType];
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <PlayerNameCell player={p} />
+                      </td>
+                      <td>{p.currentTeam?.name ?? '— unattached —'}</td>
+                      <td>{p.originType}</td>
+                      <td>{p.transferCount}</td>
+                      <td>
+                        {p.transferCount}/{cap}
+                        {p.transferCount >= cap && <span className="badge badge-bad"> at cap</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </CollapsibleList>
       </section>
     </DashboardShell>
   );

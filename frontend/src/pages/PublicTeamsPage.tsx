@@ -5,6 +5,7 @@ import type { Player, Team } from '../types';
 import { StatTile } from '../components/StatTile';
 import { ThemeToggleButton } from '../components/ThemeToggleButton';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
+import { CollapsibleList } from '../components/CollapsibleList';
 import { TableIcon, UsersIcon } from '../components/icons';
 
 export function PublicTeamsPage() {
@@ -54,7 +55,6 @@ export function PublicTeamsPage() {
 
       {freeAgents && freeAgents.length > 0 && (
         <section className="card">
-          <h2>Free Agents ({freeAgents.length})</h2>
           <FreeAgentsTable players={freeAgents} />
         </section>
       )}
@@ -63,29 +63,30 @@ export function PublicTeamsPage() {
 
       {teams?.map((team) => (
         <section className="card" key={team.id}>
-          <h2>
-            {team.name} <span className="muted">({team.roster?.length ?? 0} players)</span>
-          </h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Origin</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {team.roster?.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.name}</td>
-                  <td>{p.status}</td>
-                  <td>{p.originType}</td>
-                  <td>{p.transferValue != null ? `R${p.transferValue}` : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <CollapsibleList label={team.name} items={team.roster ?? []} getName={(p) => p.name}>
+            {(filtered) => (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Origin</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td>{p.status}</td>
+                      <td>{p.originType}</td>
+                      <td>{p.transferValue != null ? `R${p.transferValue}` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CollapsibleList>
         </section>
       ))}
     </div>
