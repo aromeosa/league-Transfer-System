@@ -135,8 +135,7 @@ export function FreeAgentsPage() {
       )}
 
       <section className="card">
-        <h2>Current Free Agents ({players?.length ?? 0})</h2>
-        <FreeAgentsTable players={players ?? []} />
+        <FreeAgentsTable players={players ?? []} label="Current Free Agents" />
       </section>
     </div>
   );

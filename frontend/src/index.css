@@ -706,6 +706,46 @@ button + button {
   white-space: nowrap;
 }
 
+/* ---------- Collapsible name lists (rosters / free agents) ---------- */
+
+.collapsible-list-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.collapsible-list-toggle svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.collapsible-list-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.collapsible-list-body {
+  margin-top: 0.9rem;
+}
+
+.collapsible-list-search {
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
 /* ---------- Request rows / banners / badges ---------- */
 
 .request-row {

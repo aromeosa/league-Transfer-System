@@ -105,6 +105,14 @@ export function CameraIcon(props: IconProps) {
   );
 }
 
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="m5.5 8.5 6.5 7 6.5-7" />
+    </svg>
+  );
+}
+
 export function LogOutIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
