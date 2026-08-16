@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
-import { Player, PlayerStatus, UserRole } from '../entities';
+import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, UserRole } from '../entities';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
 
@@ -41,6 +41,22 @@ export class PlayersService {
     }
 
     player.transferValue = transferValue;
+    return this.playerRepo.save(player);
+  }
+
+  /** Public directory of current Free Agents — used by the Teams and Free Agents pages. */
+  findFreeAgents(): Promise<Player[]> {
+    return this.playerRepo.find({ where: { status: PlayerStatus.FREE_AGENT }, order: { name: 'ASC' } });
+  }
+
+  /** Public self-signup — no auth, no approval workflow; visible in the pool immediately. */
+  registerFreeAgent(name: string, position: PlayerPosition): Promise<Player> {
+    const player = this.playerRepo.create({
+      name,
+      position,
+      status: PlayerStatus.FREE_AGENT,
+      originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+    });
     return this.playerRepo.save(player);
   }
 

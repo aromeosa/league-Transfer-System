@@ -1,6 +1,7 @@
 export type UserRole = 'TEAM_OWNER' | 'LEAGUE_ADMIN';
 export type TeamStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
 export type PlayerStatus = 'FREE_AGENT' | 'REGISTERED' | 'LEGACY';
+export type PlayerPosition = 'GK' | 'DF' | 'MD' | 'ST';
 export type RequestType = 'FREE_AGENT_SIGNING' | 'CLUB_TRANSFER' | 'LEGACY_TRANSFER';
 export type RequestStatus =
   | 'PENDING_RELEASING_APPROVAL'
@@ -9,7 +10,8 @@ export type RequestStatus =
   | 'APPROVED'
   | 'REJECTED_BY_RELEASING_TEAM'
   | 'REJECTED_BY_LEAGUE_ADMIN'
-  | 'CANCELLED_WINDOW_CLOSED';
+  | 'CANCELLED_WINDOW_CLOSED'
+  | 'CANCELLED_PLAYER_UNAVAILABLE';
 
 export interface CurrentUser {
   id: string;
@@ -26,6 +28,7 @@ export interface Player {
   status: PlayerStatus;
   originType: 'FREE_AGENT_ORIGIN' | 'DIRECT_REGISTRATION';
   legacyReason?: string | null;
+  position?: PlayerPosition | null;
   transferValue?: number | null;
   transferCount: number;
   currentTeam?: Team | null;

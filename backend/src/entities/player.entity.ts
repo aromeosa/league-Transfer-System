@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { LegacyReason, PlayerOrigin, PlayerStatus } from './enums';
+import { LegacyReason, PlayerOrigin, PlayerPosition, PlayerStatus } from './enums';
 import { Team } from './team.entity';
 import { DecimalTransformer } from './decimal.transformer';
 
@@ -27,6 +27,10 @@ export class Player {
 
   @Column({ name: 'legacy_reason', type: 'enum', enum: LegacyReason, nullable: true })
   legacyReason?: LegacyReason | null;
+
+  /** GK/DF/MD/ST — collected at Free Agent self-signup; nullable for players registered another way. */
+  @Column({ type: 'enum', enum: PlayerPosition, nullable: true })
+  position?: PlayerPosition | null;
 
   /** R500–R5,000 (§1.3) — nullable until the current team assigns one. */
   @Column({

@@ -21,6 +21,13 @@ export enum PlayerOrigin {
   DIRECT_REGISTRATION = 'DIRECT_REGISTRATION',
 }
 
+export enum PlayerPosition {
+  GK = 'GK',
+  DF = 'DF',
+  MD = 'MD',
+  ST = 'ST',
+}
+
 export enum LegacyReason {
   QUALIFIED_MAIN_EVENT = 'QUALIFIED_MAIN_EVENT',
   ASSISTED_QUALIFICATION = 'ASSISTED_QUALIFICATION',
@@ -51,6 +58,8 @@ export enum RequestStatus {
   REJECTED_BY_RELEASING_TEAM = 'REJECTED_BY_RELEASING_TEAM',
   REJECTED_BY_LEAGUE_ADMIN = 'REJECTED_BY_LEAGUE_ADMIN',
   CANCELLED_WINDOW_CLOSED = 'CANCELLED_WINDOW_CLOSED',
+  /** A competing request for the same player was approved first (see leagueDecision). */
+  CANCELLED_PLAYER_UNAVAILABLE = 'CANCELLED_PLAYER_UNAVAILABLE',
 }
 
 export enum ApprovalActorRole {

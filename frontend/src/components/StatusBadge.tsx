@@ -8,6 +8,7 @@ const LABELS: Record<RequestStatus, string> = {
   REJECTED_BY_RELEASING_TEAM: 'Rejected by releasing team',
   REJECTED_BY_LEAGUE_ADMIN: 'Rejected by League Admin',
   CANCELLED_WINDOW_CLOSED: 'Cancelled — window closed',
+  CANCELLED_PLAYER_UNAVAILABLE: 'Cancelled — player no longer available',
 };
 
 const TONE: Record<RequestStatus, 'pending' | 'good' | 'bad'> = {
@@ -18,6 +19,7 @@ const TONE: Record<RequestStatus, 'pending' | 'good' | 'bad'> = {
   REJECTED_BY_RELEASING_TEAM: 'bad',
   REJECTED_BY_LEAGUE_ADMIN: 'bad',
   CANCELLED_WINDOW_CLOSED: 'bad',
+  CANCELLED_PLAYER_UNAVAILABLE: 'bad',
 };
 
 export function StatusBadge({ status }: { status: RequestStatus }) {
