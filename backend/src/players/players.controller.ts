@@ -34,7 +34,7 @@ export class PlayersController {
   /** Public self-signup — no auth, visible in the pool immediately (no approval workflow). */
   @Post('free-agents')
   registerFreeAgent(@Body() dto: RegisterFreeAgentDto) {
-    return this.playersService.registerFreeAgent(dto.name, dto.position);
+    return this.playersService.registerFreeAgent(dto.name, dto.position, dto.email, dto.password);
   }
 
   @Patch(':id/value')

@@ -5,6 +5,7 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   teamId: string | null;
+  playerId: string | null;
 }
 
 export interface AuthenticatedUser {
@@ -12,4 +13,5 @@ export interface AuthenticatedUser {
   email: string;
   role: UserRole;
   teamId: string | null;
+  playerId: string | null;
 }

@@ -22,6 +22,8 @@ export function FreeAgentsPage() {
 
   const [name, setName] = useState('');
   const [position, setPosition] = useState<PlayerPosition | ''>('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -47,9 +49,11 @@ export function FreeAgentsPage() {
     setFormError(null);
     setSubmitting(true);
     try {
-      await api.post('/players/free-agents', { name, position });
+      await api.post('/players/free-agents', { name, position, email, password });
       setName('');
       setPosition('');
+      setEmail('');
+      setPassword('');
       setSubmitted(true);
       setRefreshKey((k) => k + 1);
     } catch (err) {
@@ -73,7 +77,8 @@ export function FreeAgentsPage() {
       <section className="card" style={{ maxWidth: 480 }}>
         <h2>Sign up as a Free Agent</h2>
         <p className="muted">
-          Add yourself to the pool so any team can sign you during a transfer window — no account needed.
+          Add yourself to the pool so any team can sign you during a transfer window. You'll also get an account —
+          when a team wants to sign you, you decide whether to accept before it goes to the League Admin.
         </p>
         <form onSubmit={handleSubmit} className="stacked-form">
           <label>
@@ -93,12 +98,31 @@ export function FreeAgentsPage() {
               ))}
             </select>
           </label>
+          <label>
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={8}
+              required
+            />
+          </label>
           <button type="submit" disabled={submitting}>
             {submitting ? 'Signing up…' : 'Sign up'}
           </button>
         </form>
         {formError && <p className="error">{formError}</p>}
-        {submitted && <p className="banner banner-good">You're signed up — you now appear in the list below.</p>}
+        {submitted && (
+          <p className="banner banner-good">
+            You're signed up — you now appear in the list below. <Link to="/login">Sign in</Link> to review any
+            offers you receive.
+          </p>
+        )}
       </section>
 
       {error && <p className="error">{error}</p>}

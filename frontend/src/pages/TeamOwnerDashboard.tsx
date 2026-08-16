@@ -3,11 +3,11 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, RequestType, Team, TransferRequest, TransferWindow } from '../types';
-import { StatusBadge } from '../components/StatusBadge';
 import { StatTile } from '../components/StatTile';
 import { DashboardShell } from '../layout/DashboardShell';
 import { CameraIcon, HomeIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { RequestTable } from '../components/RequestTable';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
 
 export function TeamOwnerDashboard() {
@@ -623,34 +623,3 @@ function PaymentsDue({
   );
 }
 
-function RequestTable({ requests }: { requests: TransferRequest[] }) {
-  if (requests.length === 0) return <p className="muted">No transfer requests yet.</p>;
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th>Player</th>
-          <th>Type</th>
-          <th>From</th>
-          <th>To</th>
-          <th>Fee</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {requests.map((r) => (
-          <tr key={r.id}>
-            <td>{r.player.name}</td>
-            <td>{r.requestType}</td>
-            <td>{r.releasingTeam?.name ?? '—'}</td>
-            <td>{r.requestingTeam.name}</td>
-            <td>R{r.agreedFee}</td>
-            <td>
-              <StatusBadge status={r.status} />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}

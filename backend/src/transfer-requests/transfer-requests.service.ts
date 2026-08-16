@@ -27,6 +27,7 @@ import { computeFeeSplit, transferCountCapFor, wouldBreachSquadFloor } from './f
 
 const ACTIVE_REQUEST_STATUSES = [
   RequestStatus.PENDING_RELEASING_APPROVAL,
+  RequestStatus.PENDING_PLAYER_APPROVAL,
   RequestStatus.PENDING_PAYMENT,
   RequestStatus.PENDING_LEAGUE_APPROVAL,
   RequestStatus.APPROVED,
@@ -78,7 +79,7 @@ export class TransferRequestsService {
 
       const player = await manager.findOne(Player, {
         where: { id: dto.playerId },
-        relations: ['currentTeam'],
+        relations: ['currentTeam', 'account'],
       });
       if (!player) {
         throw new NotFoundException('Player not found');
@@ -127,7 +128,15 @@ export class TransferRequestsService {
         ? wouldBreachSquadFloor(await manager.count(Player, { where: { currentTeam: { id: releasingTeam.id } } }))
         : false;
 
-      const status = releasingTeam ? RequestStatus.PENDING_RELEASING_APPROVAL : RequestStatus.PENDING_PAYMENT;
+      // A Free Agent who signed up with their own account must accept the offer
+      // themselves before it can proceed to payment (§ free-agent-signup). Free Agents
+      // from before that feature existed have no account to log in with, so they fall
+      // back to the old behaviour and go straight to payment.
+      const status = releasingTeam
+        ? RequestStatus.PENDING_RELEASING_APPROVAL
+        : dto.requestType === RequestType.FREE_AGENT_SIGNING && player.account
+          ? RequestStatus.PENDING_PLAYER_APPROVAL
+          : RequestStatus.PENDING_PAYMENT;
 
       const request = manager.create(TransferRequest, {
         window,
@@ -185,6 +194,44 @@ export class TransferRequestsService {
 
       request.status =
         dto.decision === Decision.APPROVE ? RequestStatus.PENDING_PAYMENT : RequestStatus.REJECTED_BY_RELEASING_TEAM;
+      if (dto.decision === Decision.REJECT) {
+        request.decidedAt = new Date();
+      }
+      await manager.save(TransferRequest, request);
+      return manager.findOneOrFail(TransferRequest, { where: { id: requestId }, relations: DETAIL_RELATIONS });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Free Agent decision (POST /transfer-requests/:id/player-decision)
+  // ---------------------------------------------------------------------------
+  async playerDecision(
+    requestId: string,
+    dto: { decision: Decision; notes?: string },
+    actingUser: AuthenticatedUser,
+  ): Promise<TransferRequest> {
+    return this.dataSource.transaction(async (manager) => {
+      const request = await this.loadForUpdate(manager, requestId);
+
+      if (request.status !== RequestStatus.PENDING_PLAYER_APPROVAL) {
+        throw new ConflictException(`Request is not awaiting a player decision (status: ${request.status})`);
+      }
+      if (actingUser.role !== UserRole.FREE_AGENT || actingUser.playerId !== request.player.id) {
+        throw new ForbiddenException('Only the Free Agent themselves may decide on this request');
+      }
+
+      await manager.save(
+        ApprovalAction,
+        manager.create(ApprovalAction, {
+          request,
+          actorUser: { id: actingUser.userId },
+          actorRole: ApprovalActorRole.PLAYER,
+          decision: dto.decision,
+          notes: dto.notes ?? null,
+        }),
+      );
+
+      request.status = dto.decision === Decision.APPROVE ? RequestStatus.PENDING_PAYMENT : RequestStatus.REJECTED_BY_PLAYER;
       if (dto.decision === Decision.REJECT) {
         request.decidedAt = new Date();
       }
@@ -369,6 +416,14 @@ export class TransferRequestsService {
       });
     }
 
+    if (actingUser.role === UserRole.FREE_AGENT) {
+      return this.requestRepo.find({
+        where: { player: { id: actingUser.playerId! }, ...(status ? { status } : {}) },
+        relations: DETAIL_RELATIONS,
+        order: { createdAt: 'DESC' },
+      });
+    }
+
     const [asRequester, asReleaser] = await Promise.all([
       this.requestRepo.find({
         where: { requestingTeam: { id: actingUser.teamId! }, ...(status ? { status } : {}) },
@@ -391,7 +446,8 @@ export class TransferRequestsService {
     const involved =
       actingUser.role === UserRole.LEAGUE_ADMIN ||
       actingUser.teamId === request.requestingTeam.id ||
-      actingUser.teamId === request.releasingTeam?.id;
+      actingUser.teamId === request.releasingTeam?.id ||
+      actingUser.playerId === request.player.id;
     if (!involved) {
       throw new ForbiddenException('You are not involved in this transfer request');
     }

@@ -1,4 +1,4 @@
-import { IsEnum, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
 import { PlayerPosition } from '../../entities';
 
 export class RegisterFreeAgentDto {
@@ -8,4 +8,11 @@ export class RegisterFreeAgentDto {
 
   @IsEnum(PlayerPosition)
   position: PlayerPosition;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
 }

@@ -13,7 +13,8 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (user) {
-    return <Navigate to={user.role === 'LEAGUE_ADMIN' ? '/admin' : '/team'} replace />;
+    const home = user.role === 'LEAGUE_ADMIN' ? '/admin' : user.role === 'FREE_AGENT' ? '/free-agent' : '/team';
+    return <Navigate to={home} replace />;
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -34,7 +35,7 @@ export function LoginPage() {
       <ThemeToggleButton className="theme-toggle-corner" />
       <form className="card" onSubmit={handleSubmit}>
         <h1>5quadLeague Transfer System</h1>
-        <p className="muted">Sign in as a Team Owner or League Admin.</p>
+        <p className="muted">Sign in as a Team Owner, Free Agent, or League Admin.</p>
 
         <label>
           Email
