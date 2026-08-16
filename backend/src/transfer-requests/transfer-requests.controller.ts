@@ -40,6 +40,12 @@ export class TransferRequestsController {
     return this.service.releasingDecision(id, dto, user);
   }
 
+  /** Free Agent accepts/rejects a signing offer — no ActiveTeamGuard, they have no team. */
+  @Post(':id/player-decision')
+  playerDecision(@Param('id') id: string, @Body() dto: DecisionDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.playerDecision(id, dto, user);
+  }
+
   @Post(':id/payment/initiate')
   @UseGuards(ActiveTeamGuard)
   initiatePayment(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {

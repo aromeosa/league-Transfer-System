@@ -4,6 +4,7 @@ import { TeamRegisterPage } from './pages/TeamRegisterPage';
 import { PublicTeamsPage } from './pages/PublicTeamsPage';
 import { FreeAgentsPage } from './pages/FreeAgentsPage';
 import { TeamOwnerDashboard } from './pages/TeamOwnerDashboard';
+import { FreeAgentDashboard } from './pages/FreeAgentDashboard';
 import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
 import { HowTransfersWorkPage } from './pages/HowTransfersWorkPage';
@@ -22,6 +23,14 @@ export default function App() {
         element={
           <RequireAuth role="TEAM_OWNER">
             <TeamOwnerDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/free-agent"
+        element={
+          <RequireAuth role="FREE_AGENT">
+            <FreeAgentDashboard />
           </RequireAuth>
         }
       />

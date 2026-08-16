@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { LegacyReason, PlayerOrigin, PlayerPosition, PlayerStatus } from './enums';
 import { Team } from './team.entity';
+import { UserAccount } from './user-account.entity';
 import { DecimalTransformer } from './decimal.transformer';
 
 @Entity('players')
@@ -50,6 +51,10 @@ export class Player {
   /** Data URL (client resizes/re-encodes before upload) — no external file storage needed. */
   @Column({ name: 'avatar_url', type: 'text', nullable: true })
   avatarUrl?: string | null;
+
+  /** Inverse side — the owning FK (`player_id`) lives on UserAccount. Free Agents only. */
+  @OneToOne(() => UserAccount, (account) => account.player)
+  account?: UserAccount | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

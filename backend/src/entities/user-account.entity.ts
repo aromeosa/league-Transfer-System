@@ -2,6 +2,7 @@ import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGenerate
 import { Exclude } from 'class-transformer';
 import { UserRole } from './enums';
 import { Team } from './team.entity';
+import { Player } from './player.entity';
 
 @Entity('user_accounts')
 export class UserAccount {
@@ -25,6 +26,11 @@ export class UserAccount {
   @OneToOne(() => Team, (team) => team.ownerAccount, { nullable: true })
   @JoinColumn({ name: 'team_id' })
   team?: Team | null;
+
+  /** One account per Free Agent — null for TeamOwner/LeagueAdmin accounts. */
+  @OneToOne(() => Player, (player) => player.account, { nullable: true })
+  @JoinColumn({ name: 'player_id' })
+  player?: Player | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

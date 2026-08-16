@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
-import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, UserRole } from '../entities';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
+import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, UserAccount, UserRole } from '../entities';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
 
@@ -9,6 +10,7 @@ import { TransferWindowsService } from '../transfer-windows/transfer-windows.ser
 export class PlayersService {
   constructor(
     @InjectRepository(Player) private readonly playerRepo: Repository<Player>,
+    @InjectDataSource() private readonly dataSource: DataSource,
     private readonly transferWindowsService: TransferWindowsService,
   ) {}
 
@@ -49,15 +51,42 @@ export class PlayersService {
     return this.playerRepo.find({ where: { status: PlayerStatus.FREE_AGENT }, order: { name: 'ASC' } });
   }
 
-  /** Public self-signup — no auth, no approval workflow; visible in the pool immediately. */
-  registerFreeAgent(name: string, position: PlayerPosition): Promise<Player> {
-    const player = this.playerRepo.create({
-      name,
-      position,
-      status: PlayerStatus.FREE_AGENT,
-      originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+  /**
+   * Public self-signup — no auth, no approval workflow to join the pool (visible
+   * immediately), but the account created here is what lets this Free Agent later log
+   * in and accept/reject a team's signing offer themselves (see TransferRequestsService).
+   */
+  async registerFreeAgent(name: string, position: PlayerPosition, email: string, password: string): Promise<Player> {
+    const existing = await this.dataSource.getRepository(UserAccount).findOne({ where: { email } });
+    if (existing) {
+      throw new ConflictException('A user with this email already exists');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const player = await manager.save(
+        Player,
+        manager.create(Player, {
+          name,
+          position,
+          status: PlayerStatus.FREE_AGENT,
+          originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+        }),
+      );
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      await manager.save(
+        UserAccount,
+        manager.create(UserAccount, {
+          name,
+          email,
+          passwordHash,
+          role: UserRole.FREE_AGENT,
+          player,
+        }),
+      );
+
+      return player;
     });
-    return this.playerRepo.save(player);
   }
 
   /** Team Owner uploads/replaces a photo for one of their own players. Not window-locked. */

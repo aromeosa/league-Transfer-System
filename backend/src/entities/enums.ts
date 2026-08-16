@@ -1,6 +1,8 @@
 export enum UserRole {
   TEAM_OWNER = 'TEAM_OWNER',
   LEAGUE_ADMIN = 'LEAGUE_ADMIN',
+  /** A self-registered Free Agent — logs in to accept/reject signing offers (see FreeAgentDto). */
+  FREE_AGENT = 'FREE_AGENT',
 }
 
 /** Self-registered teams start PENDING_APPROVAL; admin-created teams start ACTIVE. */
@@ -47,15 +49,18 @@ export enum RequestType {
 
 /**
  * "Submitted" from the §5.2 state diagram is transient — a request is created
- * directly into PENDING_RELEASING_APPROVAL (has a current club) or PENDING_PAYMENT
- * (Free Agent signing / unattached Registered player, no releasing-team step).
+ * directly into PENDING_RELEASING_APPROVAL (has a current club), PENDING_PLAYER_APPROVAL
+ * (Free Agent signing of a player with their own account — they must accept first), or
+ * PENDING_PAYMENT (unattached Registered player / Free Agent with no account on file).
  */
 export enum RequestStatus {
   PENDING_RELEASING_APPROVAL = 'PENDING_RELEASING_APPROVAL',
+  PENDING_PLAYER_APPROVAL = 'PENDING_PLAYER_APPROVAL',
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PENDING_LEAGUE_APPROVAL = 'PENDING_LEAGUE_APPROVAL',
   APPROVED = 'APPROVED',
   REJECTED_BY_RELEASING_TEAM = 'REJECTED_BY_RELEASING_TEAM',
+  REJECTED_BY_PLAYER = 'REJECTED_BY_PLAYER',
   REJECTED_BY_LEAGUE_ADMIN = 'REJECTED_BY_LEAGUE_ADMIN',
   CANCELLED_WINDOW_CLOSED = 'CANCELLED_WINDOW_CLOSED',
   /** A competing request for the same player was approved first (see leagueDecision). */
@@ -64,6 +69,7 @@ export enum RequestStatus {
 
 export enum ApprovalActorRole {
   RELEASING_TEAM = 'RELEASING_TEAM',
+  PLAYER = 'PLAYER',
   LEAGUE_ADMIN = 'LEAGUE_ADMIN',
 }
 
