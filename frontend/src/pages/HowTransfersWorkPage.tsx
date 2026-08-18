@@ -63,11 +63,11 @@ export function HowTransfersWorkPage() {
 
       <section className="card">
         <h2>4. How many times can the same player move?</h2>
-        <ul>
-          <li>A player who started as a <strong>Free Agent</strong> can only be transferred <strong>once more</strong> after their first signing.</li>
-          <li>A player who was <strong>registered directly to a team</strong> from the start can be transferred up to <strong>twice</strong> in a season.</li>
-        </ul>
-        <p className="muted">This is a season-long limit on the player, separate from your team's per-window limits above.</p>
+        <p>
+          There's no season-long limit on a player — the same player can be transferred as many times as the
+          league's other rules allow. Your team's per-window limits above (2 Free Agents, 2 Registered Players,
+          1 Legacy Player) are what actually keep transfers in check.
+        </p>
       </section>
 
       <section className="card">

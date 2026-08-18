@@ -1,4 +1,4 @@
-import { computeFeeSplit, transferCountCapFor, wouldBreachSquadFloor } from './fee-split.util';
+import { computeFeeSplit, wouldBreachSquadFloor } from './fee-split.util';
 import { BusinessRules } from '../config/business-rules.config';
 
 describe('computeFeeSplit', () => {
@@ -49,15 +49,5 @@ describe('wouldBreachSquadFloor', () => {
     // callers are expected to flag, not block, per the resolved squad-floor rule.
     expect(() => wouldBreachSquadFloor(1)).not.toThrow();
     expect(wouldBreachSquadFloor(1)).toBe(true);
-  });
-});
-
-describe('transferCountCapFor', () => {
-  it('caps ex-Free-Agent players at 1 further transfer (§1.4 #4)', () => {
-    expect(transferCountCapFor('FREE_AGENT_ORIGIN')).toBe(1);
-  });
-
-  it('caps directly-registered players at 2 transfers per season (§1.4 #9, round 2)', () => {
-    expect(transferCountCapFor('DIRECT_REGISTRATION')).toBe(2);
   });
 });

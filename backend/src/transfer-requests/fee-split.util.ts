@@ -28,10 +28,3 @@ export function computeFeeSplit(totalFee: number): FeeSplit {
 export function wouldBreachSquadFloor(currentRosterSize: number): boolean {
   return currentRosterSize - 1 < BusinessRules.ROSTER_MIN;
 }
-
-/** §1.4 #4/#9 — season transfer-count cap, distinct from the per-window team cap. */
-export function transferCountCapFor(originType: 'FREE_AGENT_ORIGIN' | 'DIRECT_REGISTRATION'): number {
-  return originType === 'FREE_AGENT_ORIGIN'
-    ? BusinessRules.TRANSFER_COUNT_CAP_FREE_AGENT_ORIGIN
-    : BusinessRules.TRANSFER_COUNT_CAP_DIRECT_REGISTRATION;
-}

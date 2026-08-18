@@ -8,11 +8,6 @@ import { PlayerNameCell } from '../components/PlayerNameCell';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 
-const TRANSFER_CAP: Record<Player['originType'], number> = {
-  FREE_AGENT_ORIGIN: 1,
-  DIRECT_REGISTRATION: 2,
-};
-
 export function AdminTeamsPage() {
   const { user, token, logout } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
@@ -160,27 +155,19 @@ export function AdminTeamsPage() {
                   <th>Team</th>
                   <th>Origin</th>
                   <th>Transfers used</th>
-                  <th>Season cap</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => {
-                  const cap = TRANSFER_CAP[p.originType];
-                  return (
-                    <tr key={p.id}>
-                      <td>
-                        <PlayerNameCell player={p} />
-                      </td>
-                      <td>{p.currentTeam?.name ?? '— unattached —'}</td>
-                      <td>{p.originType}</td>
-                      <td>{p.transferCount}</td>
-                      <td>
-                        {p.transferCount}/{cap}
-                        {p.transferCount >= cap && <span className="badge badge-bad"> at cap</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filtered.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <PlayerNameCell player={p} />
+                    </td>
+                    <td>{p.currentTeam?.name ?? '— unattached —'}</td>
+                    <td>{p.originType}</td>
+                    <td>{p.transferCount}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
