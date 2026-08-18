@@ -116,9 +116,27 @@ export class TransferRequestsService {
       }
 
       const releasingTeam = player.currentTeam ?? null;
-      const squadFloorFlag = releasingTeam
-        ? wouldBreachSquadFloor(await manager.count(Player, { where: { currentTeam: { id: releasingTeam.id } } }))
-        : false;
+      const releasingRosterSize = releasingTeam
+        ? await manager.count(Player, { where: { currentTeam: { id: releasingTeam.id } } })
+        : 0;
+      const requestingRosterSize = await manager.count(Player, {
+        where: { currentTeam: { id: requestingTeamId } },
+      });
+
+      // Hard gate — a transfer that would leave either squad outside the
+      // ROSTER_MIN/MAX band is rejected outright at submission, not just flagged.
+      if (releasingTeam && releasingRosterSize - 1 < BusinessRules.ROSTER_MIN) {
+        throw new BadRequestException(
+          `This transfer would drop ${releasingTeam.name}'s roster below the ${BusinessRules.ROSTER_MIN}-player minimum`,
+        );
+      }
+      if (requestingRosterSize + 1 > BusinessRules.ROSTER_MAX) {
+        throw new BadRequestException(
+          `Your roster would exceed the ${BusinessRules.ROSTER_MAX}-player maximum`,
+        );
+      }
+
+      const squadFloorFlag = releasingTeam ? wouldBreachSquadFloor(releasingRosterSize) : false;
 
       // A Free Agent who signed up with their own account must accept the offer
       // themselves before it can proceed to payment (§ free-agent-signup). Free Agents
