@@ -36,6 +36,7 @@ export interface Player {
   transferCount: number;
   currentTeam?: Team | null;
   avatarUrl?: string | null;
+  createdAt: string;
 }
 
 export interface Team {

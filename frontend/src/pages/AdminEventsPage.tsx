@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { RequestStatus, TransferRequest } from '../types';
+import type { Player, RequestStatus, TransferRequest } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TableIcon, ClockIcon } from '../components/icons';
 
@@ -34,29 +34,24 @@ interface TimelineEvent {
   at: string;
   label: string;
   tone: 'pending' | 'good' | 'bad';
-  request: TransferRequest;
+  player: string;
+  from: string;
+  to: string;
+  fee: string;
 }
 
-function buildTimeline(requests: TransferRequest[]): TimelineEvent[] {
+function buildTimeline(requests: TransferRequest[], players: Player[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   for (const r of requests) {
-    events.push({ id: `${r.id}-submitted`, at: r.createdAt, label: 'Request submitted', tone: 'pending', request: r });
+    const player = r.player.name;
+    const from = r.releasingTeam?.name ?? '—';
+    const to = r.requestingTeam.name;
+    const fee = `R${r.agreedFee}`;
+    events.push({ id: `${r.id}-submitted`, at: r.createdAt, label: 'Request submitted', tone: 'pending', player, from, to, fee });
     if (r.payment) {
-      events.push({
-        id: `${r.id}-pay-initiated`,
-        at: r.payment.createdAt,
-        label: 'Payment initiated',
-        tone: 'pending',
-        request: r,
-      });
+      events.push({ id: `${r.id}-pay-initiated`, at: r.payment.createdAt, label: 'Payment initiated', tone: 'pending', player, from, to, fee });
       if (r.payment.confirmedAt) {
-        events.push({
-          id: `${r.id}-pay-confirmed`,
-          at: r.payment.confirmedAt,
-          label: 'Payment confirmed',
-          tone: 'good',
-          request: r,
-        });
+        events.push({ id: `${r.id}-pay-confirmed`, at: r.payment.confirmedAt, label: 'Payment confirmed', tone: 'good', player, from, to, fee });
       }
     }
     if (r.decidedAt) {
@@ -65,24 +60,47 @@ function buildTimeline(requests: TransferRequest[]): TimelineEvent[] {
         at: r.decidedAt,
         label: DECISION_LABEL[r.status] ?? r.status,
         tone: DECISION_TONE[r.status] ?? 'pending',
-        request: r,
+        player,
+        from,
+        to,
+        fee,
       });
     }
   }
+
+  // Players added straight onto a roster via "Add player" never go through a transfer
+  // request at all — surfaced here separately so that path stays visible to admins too.
+  const signedViaRequestIds = new Set(requests.map((r) => r.player.id));
+  for (const p of players) {
+    if (p.originType !== 'FREE_AGENT_ORIGIN' || !p.currentTeam || signedViaRequestIds.has(p.id)) continue;
+    events.push({
+      id: `${p.id}-added`,
+      at: p.createdAt,
+      label: 'Player registered (free agent)',
+      tone: 'good',
+      player: p.name,
+      from: '—',
+      to: p.currentTeam.name,
+      fee: p.transferValue != null ? `R${p.transferValue}` : '—',
+    });
+  }
+
   return events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 }
 
 export function AdminEventsPage() {
   const { user, token, logout } = useAuth();
   const [requests, setRequests] = useState<TransferRequest[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .get<TransferRequest[]>('/transfer-requests', token)
-      .then((res) => {
-        if (!cancelled) setRequests(res);
+    Promise.all([api.get<TransferRequest[]>('/transfer-requests', token), api.get<Player[]>('/players', token)])
+      .then(([requestsRes, playersRes]) => {
+        if (cancelled) return;
+        setRequests(requestsRes);
+        setPlayers(playersRes);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load events');
@@ -92,7 +110,7 @@ export function AdminEventsPage() {
     };
   }, [token]);
 
-  const timeline = useMemo(() => buildTimeline(requests), [requests]);
+  const timeline = useMemo(() => buildTimeline(requests, players), [requests, players]);
 
   return (
     <DashboardShell title="All Events" userName={user?.name} onLogout={logout} navItems={ADMIN_NAV}>
@@ -121,10 +139,10 @@ export function AdminEventsPage() {
                   <td>
                     <span className={`badge badge-${ev.tone}`}>{ev.label}</span>
                   </td>
-                  <td>{ev.request.player.name}</td>
-                  <td>{ev.request.releasingTeam?.name ?? '—'}</td>
-                  <td>{ev.request.requestingTeam.name}</td>
-                  <td>R{ev.request.agreedFee}</td>
+                  <td>{ev.player}</td>
+                  <td>{ev.from}</td>
+                  <td>{ev.to}</td>
+                  <td>{ev.fee}</td>
                 </tr>
               ))}
             </tbody>
