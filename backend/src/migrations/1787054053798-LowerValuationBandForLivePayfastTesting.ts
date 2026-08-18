@@ -9,9 +9,16 @@ export class LowerValuationBandForLivePayfastTesting1787054053798 implements Mig
   name = 'LowerValuationBandForLivePayfastTesting1787054053798';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Clamp existing rows into the new band first — plenty of test data was seeded
-    // under the old R500-R5,000 range, and the ADD CONSTRAINT below would otherwise
-    // fail outright the moment any existing row violates it.
+    // Drop the old constraints *before* clamping — updating rows into the new 10-20
+    // band while the old 500-5,000 constraint is still active would itself violate
+    // that constraint (20 is nowhere near >= 500). Old bounds only fully stop applying
+    // once the constraint is gone.
+    await queryRunner.query(`ALTER TABLE "players" DROP CONSTRAINT "CHK_players_transfer_value_band"`);
+    await queryRunner.query(`ALTER TABLE "transfer_requests" DROP CONSTRAINT "CHK_transfer_requests_agreed_fee_band"`);
+
+    // Clamp existing rows into the new band — plenty of test data was seeded under the
+    // old range, and the ADD CONSTRAINT below would otherwise fail outright the moment
+    // any existing row violates it.
     await queryRunner.query(`UPDATE "players" SET "transfer_value" = 20 WHERE "transfer_value" > 20`);
     await queryRunner.query(
       `UPDATE "players" SET "transfer_value" = 10 WHERE "transfer_value" IS NOT NULL AND "transfer_value" < 10`,
@@ -19,14 +26,11 @@ export class LowerValuationBandForLivePayfastTesting1787054053798 implements Mig
     await queryRunner.query(`UPDATE "transfer_requests" SET "agreed_fee" = 20 WHERE "agreed_fee" > 20`);
     await queryRunner.query(`UPDATE "transfer_requests" SET "agreed_fee" = 10 WHERE "agreed_fee" < 10`);
 
-    await queryRunner.query(`ALTER TABLE "players" DROP CONSTRAINT "CHK_players_transfer_value_band"`);
     await queryRunner.query(`
       ALTER TABLE "players" ADD CONSTRAINT "CHK_players_transfer_value_band" CHECK (
         "transfer_value" IS NULL OR ("transfer_value" >= 10 AND "transfer_value" <= 20)
       )
     `);
-
-    await queryRunner.query(`ALTER TABLE "transfer_requests" DROP CONSTRAINT "CHK_transfer_requests_agreed_fee_band"`);
     await queryRunner.query(`
       ALTER TABLE "transfer_requests" ADD CONSTRAINT "CHK_transfer_requests_agreed_fee_band"
         CHECK ("agreed_fee" >= 10 AND "agreed_fee" <= 20)
