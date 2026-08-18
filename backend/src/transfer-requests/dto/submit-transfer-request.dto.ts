@@ -1,6 +1,5 @@
-import { IsEnum, IsNumber, IsUUID, Max, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsUUID, Min } from 'class-validator';
 import { RequestType } from '../../entities';
-import { BusinessRules } from '../../config/business-rules.config';
 
 export class SubmitTransferRequestDto {
   @IsUUID()
@@ -9,8 +8,10 @@ export class SubmitTransferRequestDto {
   @IsEnum(RequestType)
   requestType: RequestType;
 
+  // Upper bound and the free-agent-only R0 allowance are business rules that depend on
+  // requestType, so they're enforced in TransferRequestsService.submit() instead — see
+  // there for why a free agent signing can be R0 but a club/legacy transfer can't.
   @IsNumber()
-  @Min(BusinessRules.VALUATION_MIN)
-  @Max(BusinessRules.VALUATION_MAX)
+  @Min(0)
   proposedFee: number;
 }

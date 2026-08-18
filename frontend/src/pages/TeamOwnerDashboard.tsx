@@ -152,6 +152,7 @@ export function TeamOwnerDashboard() {
 
       <SubmitRequestForm
         available={available}
+        rosterSize={team.roster?.length ?? 0}
         windowOpen={window_?.status === 'OPEN'}
         token={token}
         onSubmitted={refresh}
@@ -240,6 +241,10 @@ function PlayerAvatarCell({
 // Deliberately tiny right now for live PayFast testing with real transactions.
 const VALUE_MIN = 10;
 const VALUE_MAX = 20;
+
+// Mirrors the backend's roster ceiling (§4.2 / BusinessRules.ROSTER_MAX) — signing a
+// free agent is disabled once a roster is already full, re-enabled once it drops below.
+const ROSTER_MAX = 15;
 
 function PlayerValueCell({
   player,
@@ -474,11 +479,13 @@ function PlayerPicker({
 
 function SubmitRequestForm({
   available,
+  rosterSize,
   windowOpen,
   token,
   onSubmitted,
 }: {
   available: Player[];
+  rosterSize: number;
   windowOpen: boolean;
   token: string | null;
   onSubmitted: () => void;
@@ -488,7 +495,22 @@ function SubmitRequestForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const selected = available.find((p) => p.id === playerId);
+  // Signing a free agent is disabled once the roster is at the 15-player cap — club
+  // transfers/legacy transfers stay selectable (the backend still enforces the same
+  // cap for those, this just doesn't proactively hide them here).
+  const canSignFreeAgents = rosterSize < ROSTER_MAX;
+  const selectable = canSignFreeAgents ? available : available.filter((p) => p.status !== 'FREE_AGENT');
+
+  const selected = selectable.find((p) => p.id === playerId);
+  // Only a free agent signing can be free — a team proposes the fee (the free agent
+  // never lists one themselves), and leaving it at R0 signs them for free.
+  const isFreeAgentSigning = selected?.status === 'FREE_AGENT';
+
+  function selectPlayer(id: string) {
+    setPlayerId(id);
+    const player = selectable.find((p) => p.id === id);
+    setFee(player?.status === 'FREE_AGENT' ? 0 : VALUE_MIN);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -510,16 +532,22 @@ function SubmitRequestForm({
     <section className="card">
       <h2>Sign or request a player</h2>
       {!windowOpen && <p className="muted">The transfer window is closed — requests cannot be submitted.</p>}
+      {!canSignFreeAgents && (
+        <p className="muted">
+          Your roster is full ({rosterSize}/{ROSTER_MAX}) — signing free agents is disabled until it drops below{' '}
+          {ROSTER_MAX}. Club/legacy transfers are still available.
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="inline-form">
         <label>
           Player
-          <PlayerPicker players={available} value={playerId} onChange={setPlayerId} disabled={!windowOpen} />
+          <PlayerPicker players={selectable} value={playerId} onChange={selectPlayer} disabled={!windowOpen} />
         </label>
         <label>
-          Proposed fee (R{VALUE_MIN}–R{VALUE_MAX})
+          {isFreeAgentSigning ? `Transfer fee (optional — R0 to sign for free, or R${VALUE_MIN}–R${VALUE_MAX})` : `Proposed fee (R${VALUE_MIN}–R${VALUE_MAX})`}
           <input
             type="number"
-            min={VALUE_MIN}
+            min={isFreeAgentSigning ? 0 : VALUE_MIN}
             max={VALUE_MAX}
             value={fee}
             onChange={(e) => setFee(Number(e.target.value))}
