@@ -358,6 +358,36 @@ export class TransferRequestsService {
     });
   }
 
+  /**
+   * League Admin escape hatch for when PayFast's ITN never reaches us (webhook delivery
+   * is inherently best-effort — a cold-started free-tier dyno, a dropped connection, etc.
+   * can all silently swallow it) despite the payer having genuinely completed checkout.
+   * Reuses confirmGatewayPayment so the same idempotency/status-transition guarantees
+   * apply; the raw payload records who confirmed it and when, for audit purposes.
+   */
+  async confirmPaymentManually(requestId: string, actingUser: AuthenticatedUser): Promise<TransferRequest> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may manually confirm a payment');
+    }
+    const payment = await this.dataSource.getRepository(Payment).findOne({ where: { request: { id: requestId } } });
+    if (!payment) {
+      throw new NotFoundException('No payment found for this request');
+    }
+    if (payment.status !== PaymentStatus.INITIATED) {
+      throw new ConflictException(`Payment is not awaiting confirmation (status: ${payment.status})`);
+    }
+
+    await this.confirmGatewayPayment(
+      payment.id,
+      'MANUAL_ADMIN_CONFIRM',
+      PaymentStatus.CONFIRMED,
+      JSON.stringify({ manual: true, confirmedByUserId: actingUser.userId, confirmedAt: new Date().toISOString() }),
+      payment.totalFee,
+    );
+
+    return this.findOneForUser(requestId, actingUser);
+  }
+
   // ---------------------------------------------------------------------------
   // League Admin decision (§7.4 POST /transfer-requests/:id/league-decision, FR-26)
   // ---------------------------------------------------------------------------

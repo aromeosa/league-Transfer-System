@@ -119,6 +119,9 @@ export function LeagueAdminDashboard() {
                 <td>R{r.agreedFee}</td>
                 <td>
                   <PaymentStatusBadge payment={r.payment} />
+                  {r.payment?.status === 'INITIATED' && (
+                    <ConfirmPaymentManuallyButton requestId={r.id} token={token} onConfirmed={refresh} />
+                  )}
                 </td>
                 <td>{r.squadFloorFlag ? <span className="badge badge-bad">flagged</span> : '—'}</td>
                 <td>
@@ -216,6 +219,46 @@ function LeagueDecisionRow({
           Reject
         </button>
       </span>
+    </div>
+  );
+}
+
+/** Escape hatch for when PayFast's ITN never arrives despite the payer having actually
+ * paid — the League Admin confirms it manually after checking the PayFast dashboard. */
+function ConfirmPaymentManuallyButton({
+  requestId,
+  token,
+  onConfirmed,
+}: {
+  requestId: string;
+  token: string | null;
+  onConfirmed: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirm() {
+    if (!window.confirm('Confirm this payment manually? Only do this after verifying it in the PayFast dashboard.')) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/transfer-requests/${requestId}/payment/confirm-manually`, {}, token);
+      onConfirmed();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to confirm payment');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <button disabled={busy} onClick={confirm} style={{ marginTop: '0.25rem' }}>
+        {busy ? 'Confirming…' : 'Confirm manually'}
+      </button>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }
