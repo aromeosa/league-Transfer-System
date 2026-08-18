@@ -23,7 +23,7 @@ import { BusinessRules } from '../config/business-rules.config';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { SubmitTransferRequestDto } from './dto/submit-transfer-request.dto';
 import { PAYMENT_GATEWAY, PaymentGatewayService } from '../payment-gateway/payment-gateway.interface';
-import { computeFeeSplit, transferCountCapFor, wouldBreachSquadFloor } from './fee-split.util';
+import { computeFeeSplit, wouldBreachSquadFloor } from './fee-split.util';
 
 const ACTIVE_REQUEST_STATUSES = [
   RequestStatus.PENDING_RELEASING_APPROVAL,
@@ -93,15 +93,6 @@ export class TransferRequestsService {
 
       if (player.currentTeam?.id === requestingTeamId) {
         throw new BadRequestException('Player is already on your roster');
-      }
-
-      // §1.4 #4/#9 — per-player season transfer-count cap, distinct from the per-window
-      // team cap below. The initial Free Agent signing doesn't count against it.
-      if (dto.requestType !== RequestType.FREE_AGENT_SIGNING) {
-        const cap = transferCountCapFor(player.originType);
-        if (player.transferCount >= cap) {
-          throw new BadRequestException('This player has already used their season transfer allowance');
-        }
       }
 
       // §1.4 #1/#12 — per-team, per-window cap, capped independently per category.

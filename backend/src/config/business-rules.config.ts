@@ -14,10 +14,6 @@ export const BusinessRules = {
   WINDOW_CAP_CLUB_TRANSFER: 2,
   WINDOW_CAP_LEGACY_TRANSFER: 1,
 
-  // Per player, per season (§1.4 #4/#9) — distinct from the window caps above.
-  TRANSFER_COUNT_CAP_FREE_AGENT_ORIGIN: 1,
-  TRANSFER_COUNT_CAP_DIRECT_REGISTRATION: 2,
-
   // Fee split (§1.3) — entitlement record, not the real settlement legs.
   FEE_SPLIT_LEAGUE_PCT: 0.2,
   FEE_SPLIT_CLUB_PCT: 0.4,
