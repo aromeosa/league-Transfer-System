@@ -120,6 +120,7 @@ export function TeamOwnerDashboard() {
         <table>
           <thead>
             <tr>
+              <th>#</th>
               <th>Name</th>
               <th>Status</th>
               <th>Origin</th>
@@ -128,8 +129,9 @@ export function TeamOwnerDashboard() {
             </tr>
           </thead>
           <tbody>
-            {team.roster?.map((p) => (
+            {team.roster?.map((p, i) => (
               <tr key={p.id}>
+                <td>{i + 1}</td>
                 <td>
                   <PlayerAvatarCell player={p} token={token} onUpdated={refresh} />
                 </td>
