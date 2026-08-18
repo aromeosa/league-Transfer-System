@@ -53,4 +53,8 @@ export class Payment {
 
   @Column({ name: 'confirmed_at', type: 'timestamptz', nullable: true })
   confirmedAt?: Date | null;
+
+  /** Raw ITN body from the gateway, for audit/dispute purposes (PayFast only; null for the mock gateway). */
+  @Column({ name: 'gateway_raw_payload', type: 'text', nullable: true })
+  gatewayRawPayload?: string | null;
 }

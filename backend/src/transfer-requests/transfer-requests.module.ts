@@ -6,11 +6,11 @@ import { PaymentGatewayModule } from '../payment-gateway/payment-gateway.module'
 import { TeamsModule } from '../teams/teams.module';
 import { TransferRequestsService } from './transfer-requests.service';
 import { TransferRequestsController } from './transfer-requests.controller';
-import { PaymentWebhookController } from './payment-webhook.controller';
+import { PayfastWebhookController } from './payfast-webhook.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([TransferRequest, Payment]), AuthModule, PaymentGatewayModule, TeamsModule],
-  controllers: [TransferRequestsController, PaymentWebhookController],
+  controllers: [TransferRequestsController, PayfastWebhookController],
   providers: [TransferRequestsService],
   exports: [TransferRequestsService],
 })

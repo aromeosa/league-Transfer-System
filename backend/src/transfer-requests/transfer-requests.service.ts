@@ -234,7 +234,10 @@ export class TransferRequestsService {
   // ---------------------------------------------------------------------------
   // Payment (§7.4 POST /transfer-requests/:id/payment/initiate)
   // ---------------------------------------------------------------------------
-  async initiatePayment(requestId: string, actingUser: AuthenticatedUser): Promise<{ request: TransferRequest; payment: Payment }> {
+  async initiatePayment(
+    requestId: string,
+    actingUser: AuthenticatedUser,
+  ): Promise<{ request: TransferRequest; payment: Payment; redirectUrl?: string }> {
     return this.dataSource.transaction(async (manager) => {
       const request = await this.loadForUpdate(manager, requestId);
 
@@ -262,12 +265,20 @@ export class TransferRequestsService {
 
       const result = await this.paymentGateway.initiateSettlement({
         paymentId: payment.id,
+        transferRequestId: request.id,
         totalFee,
         leagueAmount,
         clubSettlementAmount,
+        itemName: `Transfer fee: ${request.player.name} to ${request.requestingTeam.name}`,
+        buyerEmail: actingUser.email,
       });
 
-      payment.gatewayTransactionId = result.gatewayTransactionId;
+      // A redirect-based gateway (PayFast) has no gatewayTransactionId yet — that only
+      // arrives via the ITN webhook once the payer actually completes checkout — and
+      // must stay INITIATED here rather than being marked CONFIRMED synchronously.
+      if (result.gatewayTransactionId) {
+        payment.gatewayTransactionId = result.gatewayTransactionId;
+      }
       payment.status = result.status;
       if (result.status === PaymentStatus.CONFIRMED) {
         payment.confirmedAt = new Date();
@@ -280,28 +291,49 @@ export class TransferRequestsService {
         where: { id: requestId },
         relations: DETAIL_RELATIONS,
       });
-      return { request: freshRequest, payment };
+      return { request: freshRequest, payment, redirectUrl: result.redirectUrl };
     });
   }
 
-  /** §7.4 POST /webhooks/payment-gateway — idempotent (FR-28); a real gateway would call this. */
-  async handlePaymentWebhook(gatewayTransactionId: string, status: PaymentStatus): Promise<void> {
+  /**
+   * Called by PayfastWebhookController once it's checked the ITN's signature and run
+   * PayFast's own server-side validate callback — see that controller for why raw
+   * signature/IP checks alone aren't trusted. `claimedAmount`, if given, is compared
+   * against this payment's actual totalFee — a mismatch (tampered/replayed ITN claiming
+   * a different amount was paid) fails the payment instead of confirming it. Idempotent:
+   * a payment already resolved out of INITIATED is a safe no-op, covering webhook
+   * retries/replays.
+   */
+  async confirmGatewayPayment(
+    paymentId: string,
+    gatewayTransactionId: string,
+    status: PaymentStatus,
+    rawPayload: string,
+    claimedAmount?: number,
+  ): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const payment = await manager.findOne(Payment, {
-        where: { gatewayTransactionId },
+        where: { id: paymentId },
         relations: ['request'],
       });
       if (!payment || payment.status !== PaymentStatus.INITIATED) {
-        return; // already processed, or unknown reference — safe no-op for webhook retries
+        return; // unknown payment, or already resolved — safe no-op
       }
 
-      payment.status = status;
-      if (status === PaymentStatus.CONFIRMED) {
+      const amountMismatch =
+        status === PaymentStatus.CONFIRMED &&
+        claimedAmount !== undefined &&
+        Math.abs(claimedAmount - payment.totalFee) > 0.01;
+
+      payment.status = amountMismatch ? PaymentStatus.FAILED : status;
+      payment.gatewayTransactionId = gatewayTransactionId;
+      payment.gatewayRawPayload = rawPayload;
+      if (payment.status === PaymentStatus.CONFIRMED) {
         payment.confirmedAt = new Date();
       }
       await manager.save(Payment, payment);
 
-      if (status === PaymentStatus.CONFIRMED) {
+      if (payment.status === PaymentStatus.CONFIRMED) {
         await manager.update(TransferRequest, payment.request.id, { status: RequestStatus.PENDING_LEAGUE_APPROVAL });
       }
     });
