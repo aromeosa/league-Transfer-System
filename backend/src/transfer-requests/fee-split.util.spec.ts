@@ -23,16 +23,16 @@ describe('computeFeeSplit', () => {
     expect(split.leagueAmount + split.clubSettlementAmount).toBe(2500);
   });
 
-  it('matches the band boundaries (R500 and R5,000)', () => {
+  it('matches the band boundaries', () => {
     expect(computeFeeSplit(BusinessRules.VALUATION_MIN)).toEqual({
-      leagueAmount: 100,
-      clubSettlementAmount: 400,
-      playerEntitlement: 200,
+      leagueAmount: BusinessRules.VALUATION_MIN * 0.2,
+      clubSettlementAmount: BusinessRules.VALUATION_MIN * 0.8,
+      playerEntitlement: BusinessRules.VALUATION_MIN * 0.4,
     });
     expect(computeFeeSplit(BusinessRules.VALUATION_MAX)).toEqual({
-      leagueAmount: 1000,
-      clubSettlementAmount: 4000,
-      playerEntitlement: 2000,
+      leagueAmount: BusinessRules.VALUATION_MAX * 0.2,
+      clubSettlementAmount: BusinessRules.VALUATION_MAX * 0.8,
+      playerEntitlement: BusinessRules.VALUATION_MAX * 0.4,
     });
   });
 });

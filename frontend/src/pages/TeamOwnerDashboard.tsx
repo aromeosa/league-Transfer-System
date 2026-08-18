@@ -237,8 +237,9 @@ function PlayerAvatarCell({
   );
 }
 
-const VALUE_MIN = 500;
-const VALUE_MAX = 5000;
+// Deliberately tiny right now for live PayFast testing with real transactions.
+const VALUE_MIN = 10;
+const VALUE_MAX = 20;
 
 function PlayerValueCell({
   player,
@@ -483,7 +484,7 @@ function SubmitRequestForm({
   onSubmitted: () => void;
 }) {
   const [playerId, setPlayerId] = useState('');
-  const [fee, setFee] = useState(500);
+  const [fee, setFee] = useState(VALUE_MIN);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -515,11 +516,11 @@ function SubmitRequestForm({
           <PlayerPicker players={available} value={playerId} onChange={setPlayerId} disabled={!windowOpen} />
         </label>
         <label>
-          Proposed fee (R500–R5,000)
+          Proposed fee (R{VALUE_MIN}–R{VALUE_MAX})
           <input
             type="number"
-            min={500}
-            max={5000}
+            min={VALUE_MIN}
+            max={VALUE_MAX}
             value={fee}
             onChange={(e) => setFee(Number(e.target.value))}
             disabled={!windowOpen}
@@ -594,12 +595,22 @@ function PaymentsDue({
   onPaid: () => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function pay(id: string) {
     setBusyId(id);
+    setError(null);
     try {
-      await api.post(`/transfer-requests/${id}/payment/initiate`, {}, token);
+      const result = await api.post<{ redirectUrl?: string }>(`/transfer-requests/${id}/payment/initiate`, {}, token);
+      if (result.redirectUrl) {
+        // Sending the browser to PayFast's hosted checkout — nothing left to refresh
+        // here, the page is about to navigate away.
+        window.location.href = result.redirectUrl;
+        return;
+      }
       onPaid();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to start payment');
     } finally {
       setBusyId(null);
     }
@@ -619,6 +630,7 @@ function PaymentsDue({
           </button>
         </div>
       ))}
+      {error && <p className="error">{error}</p>}
     </section>
   );
 }

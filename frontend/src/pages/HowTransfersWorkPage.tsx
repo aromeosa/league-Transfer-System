@@ -73,7 +73,7 @@ export function HowTransfersWorkPage() {
       <section className="card">
         <h2>5. What does it cost, and where does the money go?</h2>
         <ul>
-          <li>Every registered player has a value, somewhere between <strong>R500 and R5,000</strong>, set by their own team.</li>
+          <li>Every registered player has a value, somewhere between <strong>R10 and R20</strong>, set by their own team.</li>
           <li>
             You set that value when you register a player, and can only change it while a transfer window is
             open — once the window closes, values are locked until the next one opens.

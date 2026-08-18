@@ -10,6 +10,7 @@ import { FreeAgentDashboard } from './pages/FreeAgentDashboard';
 import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
 import { HowTransfersWorkPage } from './pages/HowTransfersWorkPage';
+import { PaymentResultPage } from './pages/PaymentResultPage';
 import { RequireAuth } from './auth/RequireAuth';
 
 export default function App() {
@@ -43,6 +44,14 @@ export default function App() {
         element={
           <RequireAuth role="TEAM_OWNER">
             <HowTransfersWorkPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/payment-result"
+        element={
+          <RequireAuth role="TEAM_OWNER">
+            <PaymentResultPage />
           </RequireAuth>
         }
       />
