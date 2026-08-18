@@ -10,6 +10,7 @@ import { PlayersService } from './players.service';
 import { UpdatePlayerValueDto } from './dto/update-player-value.dto';
 import { UpdatePlayerPhotoDto } from './dto/update-player-photo.dto';
 import { RegisterFreeAgentDto } from './dto/register-free-agent.dto';
+import { CreatePlayerDto } from './dto/create-player.dto';
 
 /**
  * Guards are per-method rather than class-level (unlike siblings guarded wholesale)
@@ -35,6 +36,15 @@ export class PlayersController {
   @Post('free-agents')
   registerFreeAgent(@Body() dto: RegisterFreeAgentDto) {
     return this.playersService.registerFreeAgent(dto.name, dto.position, dto.email, dto.password);
+  }
+
+  /** "Add player" — a brand-new player joins the owner's own roster directly, separate
+   * from the transfer-request-based "sign or request a player" flow. */
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
+  @Roles(UserRole.TEAM_OWNER)
+  addPlayer(@Body() dto: CreatePlayerDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.addPlayer(dto.name, dto.transferValue, user);
   }
 
   @Patch(':id/value')

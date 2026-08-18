@@ -150,6 +150,13 @@ export function TeamOwnerDashboard() {
         </table>
       </section>
 
+      <AddPlayerForm
+        rosterSize={team.roster?.length ?? 0}
+        windowOpen={window_?.status === 'OPEN'}
+        token={token}
+        onAdded={refresh}
+      />
+
       <SubmitRequestForm
         available={available}
         rosterSize={team.roster?.length ?? 0}
@@ -474,6 +481,89 @@ function PlayerPicker({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * "Add player" — separate from "Sign or request a player": registers a brand-new
+ * player straight onto the owner's own roster, no other team/free agent/approval step
+ * involved. Same window-gate and roster-cap rules as every other roster-composition
+ * change: once you register your initial minimum of 5, you can keep adding players
+ * until the roster hits the 15-player cap, then it's disabled until it drops back down.
+ */
+function AddPlayerForm({
+  rosterSize,
+  windowOpen,
+  token,
+  onAdded,
+}: {
+  rosterSize: number;
+  windowOpen: boolean;
+  token: string | null;
+  onAdded: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [value, setValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const atCap = rosterSize >= ROSTER_MAX;
+  const disabled = !windowOpen || atCap;
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await api.post('/players', { name: name.trim(), ...(value ? { transferValue: Number(value) } : {}) }, token);
+      setName('');
+      setValue('');
+      onAdded();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to add player');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2>Add a new player</h2>
+      <p className="muted">
+        Register a brand-new player straight onto your roster — separate from signing or requesting an existing
+        player.
+      </p>
+      {!windowOpen && <p className="muted">The transfer window is closed — players cannot be added.</p>}
+      {windowOpen && atCap && (
+        <p className="muted">
+          Your roster is full ({rosterSize}/{ROSTER_MAX}) — you can add players again once it drops below{' '}
+          {ROSTER_MAX}.
+        </p>
+      )}
+      <form onSubmit={handleSubmit} className="inline-form">
+        <label>
+          Player name
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={disabled} />
+        </label>
+        <label>
+          Value (optional, R{VALUE_MIN}–R{VALUE_MAX})
+          <input
+            type="number"
+            min={VALUE_MIN}
+            max={VALUE_MAX}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            disabled={disabled}
+            placeholder="Optional"
+          />
+        </label>
+        <button type="submit" disabled={disabled || !name.trim() || submitting}>
+          {submitting ? 'Adding…' : 'Add player'}
+        </button>
+      </form>
+      {error && <p className="error">{error}</p>}
+    </section>
   );
 }
 

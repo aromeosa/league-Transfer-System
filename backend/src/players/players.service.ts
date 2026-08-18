@@ -1,11 +1,12 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, UserAccount, UserRole } from '../entities';
+import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, RosterHistory, Team, UserAccount, UserRole } from '../entities';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { isUniqueViolation } from '../common/db-errors.util';
 import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
+import { BusinessRules } from '../config/business-rules.config';
 
 @Injectable()
 export class PlayersService {
@@ -45,6 +46,53 @@ export class PlayersService {
 
     player.transferValue = transferValue;
     return this.playerRepo.save(player);
+  }
+
+  /**
+   * "Add player" — separate from the transfer-request-based "sign or request a player"
+   * flow: a brand-new player (originType FREE_AGENT_ORIGIN) joins the acting owner's own
+   * roster directly, with no other team/approval/actual free-agent-pool listing
+   * involved. Window-gated and roster-capped the same way every other
+   * roster-composition change is.
+   */
+  async addPlayer(name: string, transferValue: number | undefined, actingUser: AuthenticatedUser): Promise<Player> {
+    if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
+      throw new ForbiddenException('Only a team owner may add a player to their roster');
+    }
+    const teamId = actingUser.teamId;
+
+    const openWindow = await this.transferWindowsService.getCurrent();
+    if (!openWindow) {
+      throw new ForbiddenException('Players can only be added while a transfer window is open');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const rosterSize = await manager.count(Player, { where: { currentTeam: { id: teamId } } });
+      if (rosterSize + 1 > BusinessRules.ROSTER_MAX) {
+        throw new BadRequestException(`Your roster would exceed the ${BusinessRules.ROSTER_MAX}-player maximum`);
+      }
+
+      const player = await manager.save(
+        Player,
+        manager.create(Player, {
+          name,
+          currentTeam: { id: teamId } as Team,
+          status: PlayerStatus.REGISTERED,
+          // Unlike the initial team-registration bootstrap roster (DIRECT_REGISTRATION),
+          // a player added this way is treated as having come from the free agent pool.
+          originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+          transferValue: transferValue ?? null,
+          transferCount: 0,
+        }),
+      );
+
+      await manager.save(
+        RosterHistory,
+        manager.create(RosterHistory, { player, team: { id: teamId } as Team, joinedAt: new Date() }),
+      );
+
+      return player;
+    });
   }
 
   /** Public directory of current Free Agents — used by the Teams and Free Agents pages. */
