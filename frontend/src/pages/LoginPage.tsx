@@ -45,6 +45,9 @@ export function LoginPage() {
           Password
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
+        <p className="muted" style={{ marginTop: '-0.5rem' }}>
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
 
         {error && <p className="error">{error}</p>}
 

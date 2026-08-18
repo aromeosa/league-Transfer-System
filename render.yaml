@@ -24,6 +24,10 @@ services:
       # more than one origin, e.g. "https://your-app.netlify.app,http://localhost:5173".
       - key: CORS_ORIGIN
         value: http://localhost:5173
+      # Canonical frontend URL used to build links sent in emails (e.g. the
+      # forgot-password reset link). Update to match your live frontend domain.
+      - key: FRONTEND_URL
+        value: http://localhost:5173
       # Shared secret the external cron pinger (cron-job.org) sends as the
       # x-sweep-secret header to POST /internal/sweep. Render auto-generates this;
       # copy it from the dashboard once deployed to configure the pinger.
