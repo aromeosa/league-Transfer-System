@@ -76,4 +76,6 @@ export interface Payment {
   playerEntitlement: number;
   status: 'INITIATED' | 'CONFIRMED' | 'FAILED';
   gatewayTransactionId?: string | null;
+  createdAt: string;
+  confirmedAt?: string | null;
 }
