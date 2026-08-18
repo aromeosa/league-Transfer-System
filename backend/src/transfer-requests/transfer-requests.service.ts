@@ -96,6 +96,24 @@ export class TransferRequestsService {
         throw new BadRequestException('Player is already on your roster');
       }
 
+      // Only a free agent signing may be free — anything below the valuation floor
+      // collapses to R0 rather than being rejected, so a low-balled offer just becomes
+      // a free signing instead of forcing the owner to bump it up to the R10 minimum.
+      let proposedFee = dto.proposedFee;
+      if (dto.requestType === RequestType.FREE_AGENT_SIGNING && proposedFee > 0 && proposedFee < BusinessRules.VALUATION_MIN) {
+        proposedFee = 0;
+      }
+      const feeValid =
+        dto.requestType === RequestType.FREE_AGENT_SIGNING
+          ? proposedFee === 0 ||
+            (proposedFee >= BusinessRules.VALUATION_MIN && proposedFee <= BusinessRules.VALUATION_MAX)
+          : proposedFee >= BusinessRules.VALUATION_MIN && proposedFee <= BusinessRules.VALUATION_MAX;
+      if (!feeValid) {
+        throw new BadRequestException(
+          `Fee must be between R${BusinessRules.VALUATION_MIN} and R${BusinessRules.VALUATION_MAX}`,
+        );
+      }
+
       // §1.4 #1/#12 — per-team, per-window cap, capped independently per category.
       // An advisory lock scoped to (team, window, category) closes the race between
       // the count check and the insert (§3 concurrency, §6.3).
@@ -155,7 +173,7 @@ export class TransferRequestsService {
         requestingTeam: { id: requestingTeamId } as Team,
         requestedByUser: { id: actingUser.userId },
         requestType: dto.requestType,
-        agreedFee: dto.proposedFee,
+        agreedFee: proposedFee,
         status,
         squadFloorFlag,
       });
@@ -281,6 +299,22 @@ export class TransferRequestsService {
           status: PaymentStatus.INITIATED,
         }),
       );
+
+      // A free signing (fee = 0) has nothing to actually charge — confirm it directly
+      // instead of sending an R0 transaction to a gateway that won't accept one.
+      if (totalFee === 0) {
+        payment.status = PaymentStatus.CONFIRMED;
+        payment.confirmedAt = new Date();
+        payment = await manager.save(Payment, payment);
+        request.status = RequestStatus.PENDING_LEAGUE_APPROVAL;
+        await manager.save(TransferRequest, request);
+
+        const freshRequest = await manager.findOneOrFail(TransferRequest, {
+          where: { id: requestId },
+          relations: DETAIL_RELATIONS,
+        });
+        return { request: freshRequest, payment };
+      }
 
       const result = await this.paymentGateway.initiateSettlement({
         paymentId: payment.id,
