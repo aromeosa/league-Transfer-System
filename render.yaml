@@ -20,20 +20,27 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 8h
-      # Update after deploying the frontend (Netlify) — comma-separate to allow
-      # more than one origin, e.g. "https://your-app.netlify.app,http://localhost:5173".
+      # Set directly in the Render dashboard — comma-separate to allow more than one
+      # origin, e.g. "https://your-domain.com,https://your-app.netlify.app,http://localhost:5173".
+      # sync: false so a future blueprint deploy never silently resets this back to the
+      # committed placeholder below and wipes out your real value (this happened once
+      # already — every env var below that's read from a browser or a third party like
+      # PayFast needs sync: false for the same reason).
       - key: CORS_ORIGIN
         value: http://localhost:5173
+        sync: false
       # Canonical frontend URL used to build links sent in emails (e.g. the
-      # forgot-password reset link) and PayFast's return/cancel URLs. Update to match
-      # your live frontend domain.
+      # forgot-password reset link) and PayFast's return/cancel URLs. Set your live
+      # frontend domain directly in the Render dashboard.
       - key: FRONTEND_URL
         value: http://localhost:5173
+        sync: false
       # This service's own public URL — PayFast's ITN webhook (notify_url) needs a
-      # real, publicly reachable address to call back to. Update to match your live
-      # backend domain once deployed.
+      # real, publicly reachable address to call back to. Set your live backend domain
+      # directly in the Render dashboard.
       - key: BACKEND_URL
         value: http://localhost:3000
+        sync: false
       # Shared secret the external cron pinger (cron-job.org) sends as the
       # x-sweep-secret header to POST /internal/sweep. Render auto-generates this;
       # copy it from the dashboard once deployed to configure the pinger.
