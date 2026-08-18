@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { PaymentStatusBadge } from '../components/PaymentStatusBadge';
 import { StatTile } from '../components/StatTile';
 import { TeamRegistrationForm } from '../components/TeamRegistrationForm';
 import { DashboardShell } from '../layout/DashboardShell';
@@ -103,6 +104,7 @@ export function LeagueAdminDashboard() {
               <th>From</th>
               <th>To</th>
               <th>Fee</th>
+              <th>Payment</th>
               <th>Squad floor</th>
               <th>Status</th>
             </tr>
@@ -115,6 +117,9 @@ export function LeagueAdminDashboard() {
                 <td>{r.releasingTeam?.name ?? '—'}</td>
                 <td>{r.requestingTeam.name}</td>
                 <td>R{r.agreedFee}</td>
+                <td>
+                  <PaymentStatusBadge payment={r.payment} />
+                </td>
                 <td>{r.squadFloorFlag ? <span className="badge badge-bad">flagged</span> : '—'}</td>
                 <td>
                   <StatusBadge status={r.status} />

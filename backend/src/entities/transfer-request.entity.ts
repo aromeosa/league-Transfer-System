@@ -1,9 +1,10 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { RequestStatus, RequestType } from './enums';
 import { Team } from './team.entity';
 import { Player } from './player.entity';
 import { TransferWindow } from './transfer-window.entity';
 import { UserAccount } from './user-account.entity';
+import { Payment } from './payment.entity';
 import { DecimalTransformer } from './decimal.transformer';
 
 @Entity('transfer_requests')
@@ -56,4 +57,8 @@ export class TransferRequest {
 
   @Column({ name: 'decided_at', type: 'timestamptz', nullable: true })
   decidedAt?: Date | null;
+
+  /** Inverse side — the owning FK (`request_id`) lives on Payment. Null until payment is initiated. */
+  @OneToOne(() => Payment, (payment) => payment.request)
+  payment?: Payment | null;
 }

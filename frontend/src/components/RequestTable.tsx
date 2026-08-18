@@ -1,5 +1,6 @@
 import type { TransferRequest } from '../types';
 import { StatusBadge } from './StatusBadge';
+import { PaymentStatusBadge } from './PaymentStatusBadge';
 
 export function RequestTable({ requests }: { requests: TransferRequest[] }) {
   if (requests.length === 0) return <p className="muted">No transfer requests yet.</p>;
@@ -12,6 +13,7 @@ export function RequestTable({ requests }: { requests: TransferRequest[] }) {
           <th>From</th>
           <th>To</th>
           <th>Fee</th>
+          <th>Payment</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -23,6 +25,9 @@ export function RequestTable({ requests }: { requests: TransferRequest[] }) {
             <td>{r.releasingTeam?.name ?? '—'}</td>
             <td>{r.requestingTeam.name}</td>
             <td>R{r.agreedFee}</td>
+            <td>
+              <PaymentStatusBadge payment={r.payment} />
+            </td>
             <td>
               <StatusBadge status={r.status} />
             </td>

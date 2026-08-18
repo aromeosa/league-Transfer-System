@@ -65,6 +65,7 @@ export interface TransferRequest {
   squadFloorFlag: boolean;
   createdAt: string;
   decidedAt: string | null;
+  payment?: Payment | null;
 }
 
 export interface Payment {

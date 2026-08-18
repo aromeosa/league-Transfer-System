@@ -52,6 +52,7 @@ const DETAIL_RELATIONS = [
   'releasingTeam',
   'requestingTeam',
   'requestedByUser',
+  'payment',
 ];
 
 @Injectable()
