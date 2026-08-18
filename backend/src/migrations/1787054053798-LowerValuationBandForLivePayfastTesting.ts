@@ -9,6 +9,16 @@ export class LowerValuationBandForLivePayfastTesting1787054053798 implements Mig
   name = 'LowerValuationBandForLivePayfastTesting1787054053798';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Clamp existing rows into the new band first — plenty of test data was seeded
+    // under the old R500-R5,000 range, and the ADD CONSTRAINT below would otherwise
+    // fail outright the moment any existing row violates it.
+    await queryRunner.query(`UPDATE "players" SET "transfer_value" = 20 WHERE "transfer_value" > 20`);
+    await queryRunner.query(
+      `UPDATE "players" SET "transfer_value" = 10 WHERE "transfer_value" IS NOT NULL AND "transfer_value" < 10`,
+    );
+    await queryRunner.query(`UPDATE "transfer_requests" SET "agreed_fee" = 20 WHERE "agreed_fee" > 20`);
+    await queryRunner.query(`UPDATE "transfer_requests" SET "agreed_fee" = 10 WHERE "agreed_fee" < 10`);
+
     await queryRunner.query(`ALTER TABLE "players" DROP CONSTRAINT "CHK_players_transfer_value_band"`);
     await queryRunner.query(`
       ALTER TABLE "players" ADD CONSTRAINT "CHK_players_transfer_value_band" CHECK (
