@@ -52,6 +52,11 @@ export class TransferRequestsController {
     return this.service.initiatePayment(id, user);
   }
 
+  @Post(':id/payment/confirm-manually')
+  confirmPaymentManually(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.confirmPaymentManually(id, user);
+  }
+
   @Post(':id/league-decision')
   leagueDecision(@Param('id') id: string, @Body() dto: DecisionDto, @CurrentUser() user: AuthenticatedUser) {
     return this.service.leagueDecision(id, dto, user);
