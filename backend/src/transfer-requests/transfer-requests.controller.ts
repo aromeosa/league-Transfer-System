@@ -7,6 +7,8 @@ import { ActiveTeamGuard } from '../teams/active-team.guard';
 import { TransferRequestsService } from './transfer-requests.service';
 import { SubmitTransferRequestDto } from './dto/submit-transfer-request.dto';
 import { DecisionDto } from './dto/decision.dto';
+import { ApproachTeamDto } from './dto/approach-team.dto';
+import { TeamDecisionDto } from './dto/team-decision.dto';
 
 @Controller('transfer-requests')
 @UseGuards(JwtAuthGuard)
@@ -44,6 +46,19 @@ export class TransferRequestsController {
   @Post(':id/player-decision')
   playerDecision(@Param('id') id: string, @Body() dto: DecisionDto, @CurrentUser() user: AuthenticatedUser) {
     return this.service.playerDecision(id, dto, user);
+  }
+
+  /** Free Agent approaches a team to join — no ActiveTeamGuard, they have no team. */
+  @Post('approach')
+  approachTeam(@Body() dto: ApproachTeamDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.approachTeam(dto.teamId, user);
+  }
+
+  /** The approached team accepts (setting the fee) or rejects an inbound approach. */
+  @Post(':id/team-decision')
+  @UseGuards(ActiveTeamGuard)
+  teamDecision(@Param('id') id: string, @Body() dto: TeamDecisionDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.teamDecision(id, dto, user);
   }
 
   @Post(':id/payment/initiate')
