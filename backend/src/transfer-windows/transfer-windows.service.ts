@@ -7,6 +7,8 @@ import { firstWeekWindowBounds } from './window-dates.util';
 
 const UNRESOLVED_STATUSES = [
   RequestStatus.PENDING_RELEASING_APPROVAL,
+  RequestStatus.PENDING_PLAYER_APPROVAL,
+  RequestStatus.PENDING_TEAM_APPROVAL,
   RequestStatus.PENDING_PAYMENT,
   RequestStatus.PENDING_LEAGUE_APPROVAL,
 ];

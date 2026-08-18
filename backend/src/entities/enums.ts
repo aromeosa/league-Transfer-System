@@ -56,11 +56,16 @@ export enum RequestType {
 export enum RequestStatus {
   PENDING_RELEASING_APPROVAL = 'PENDING_RELEASING_APPROVAL',
   PENDING_PLAYER_APPROVAL = 'PENDING_PLAYER_APPROVAL',
+  /** A Free Agent approached this team directly — awaiting the team owner's decision
+   *  (reverse of the usual team-initiates flow; see TransferRequestsService.approachTeam). */
+  PENDING_TEAM_APPROVAL = 'PENDING_TEAM_APPROVAL',
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PENDING_LEAGUE_APPROVAL = 'PENDING_LEAGUE_APPROVAL',
   APPROVED = 'APPROVED',
   REJECTED_BY_RELEASING_TEAM = 'REJECTED_BY_RELEASING_TEAM',
   REJECTED_BY_PLAYER = 'REJECTED_BY_PLAYER',
+  /** The approached team turned down a Free Agent's approach. */
+  REJECTED_BY_REQUESTING_TEAM = 'REJECTED_BY_REQUESTING_TEAM',
   REJECTED_BY_LEAGUE_ADMIN = 'REJECTED_BY_LEAGUE_ADMIN',
   CANCELLED_WINDOW_CLOSED = 'CANCELLED_WINDOW_CLOSED',
   /** A competing request for the same player was approved first (see leagueDecision). */
@@ -69,6 +74,8 @@ export enum RequestStatus {
 
 export enum ApprovalActorRole {
   RELEASING_TEAM = 'RELEASING_TEAM',
+  /** The team being approached, deciding on a Free-Agent-initiated approach. */
+  REQUESTING_TEAM = 'REQUESTING_TEAM',
   PLAYER = 'PLAYER',
   LEAGUE_ADMIN = 'LEAGUE_ADMIN',
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, Team } from '../types';
 import { StatTile } from '../components/StatTile';
@@ -8,7 +9,10 @@ import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 import { TableIcon, UsersIcon } from '../components/icons';
 
+const ROSTER_MAX = 15;
+
 export function PublicTeamsPage() {
+  const { user, token } = useAuth();
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [freeAgents, setFreeAgents] = useState<Player[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +34,7 @@ export function PublicTeamsPage() {
   }, []);
 
   const totalPlayers = useMemo(() => teams?.reduce((sum, t) => sum + (t.roster?.length ?? 0), 0) ?? 0, [teams]);
+  const isFreeAgent = user?.role === 'FREE_AGENT';
 
   return (
     <div className="page">
@@ -38,7 +43,7 @@ export function PublicTeamsPage() {
         <span className="shell-topbar-actions">
           <ThemeToggleButton />
           <Link to="/free-agents">Free agents</Link>
-          <Link to="/login">Sign in</Link>
+          {!user && <Link to="/login">Sign in</Link>}
         </span>
       </header>
 
@@ -63,6 +68,7 @@ export function PublicTeamsPage() {
 
       {teams?.map((team) => (
         <section className="card" key={team.id}>
+          {isFreeAgent && <ApproachTeamButton team={team} token={token} />}
           <CollapsibleList label={team.name} items={team.roster ?? []} getName={(p) => p.name}>
             {(filtered) => (
               <table>
@@ -89,6 +95,39 @@ export function PublicTeamsPage() {
           </CollapsibleList>
         </section>
       ))}
+    </div>
+  );
+}
+
+/** Lets a logged-in Free Agent approach this team directly — reverse of the usual
+ * team-initiates "sign or request a player" flow. Shows up as a notification on the
+ * team owner's dashboard once submitted. */
+function ApproachTeamButton({ team, token }: { team: Team; token: string | null }) {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const full = (team.roster?.length ?? 0) >= ROSTER_MAX;
+
+  async function approach() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post('/transfer-requests/approach', { teamId: team.id }, token);
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to approach team');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: '0.75rem' }}>
+      <button disabled={busy || done || full} onClick={approach}>
+        {done ? 'Approach sent' : busy ? 'Sending…' : full ? 'Roster full' : 'Approach to join'}
+      </button>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

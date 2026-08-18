@@ -54,6 +54,10 @@ export function TeamOwnerDashboard() {
     () => requests.filter((r) => r.releasingTeam?.id === user?.teamId && r.status === 'PENDING_RELEASING_APPROVAL'),
     [requests, user],
   );
+  const incomingApproaches = useMemo(
+    () => requests.filter((r) => r.requestingTeam.id === user?.teamId && r.status === 'PENDING_TEAM_APPROVAL'),
+    [requests, user],
+  );
   const awaitingMyPayment = useMemo(
     () => requests.filter((r) => r.requestingTeam.id === user?.teamId && r.status === 'PENDING_PAYMENT'),
     [requests, user],
@@ -105,10 +109,13 @@ export function TeamOwnerDashboard() {
         <StatTile icon={<UsersIcon />} label="Roster size" value={team.roster?.length ?? 0} />
         <StatTile icon={<TableIcon />} label="Squad value" value={`R${squadValue}`} />
         <StatTile icon={<TransferIcon />} label="Incoming requests" value={incoming.length} />
+        <StatTile icon={<UsersIcon />} label="Free agent approaches" value={incomingApproaches.length} />
         <StatTile icon={<TransferIcon />} label="Awaiting payment" value={awaitingMyPayment.length} />
       </div>
 
       <WindowBanner window={window_} />
+
+      <IncomingApproaches requests={incomingApproaches} token={token} onDecided={refresh} />
 
       <section className="card">
         <h2>Roster ({team.roster?.length ?? 0})</h2>
@@ -652,6 +659,91 @@ function SubmitRequestForm({
       </form>
       {error && <p className="error">{error}</p>}
     </section>
+  );
+}
+
+/**
+ * Notifications for Free Agents who approached this team directly (reverse of the
+ * usual "sign or request a player" flow — the team never proposes a fee on submission
+ * here, since there was no submission by the team; they set one now, on acceptance.
+ */
+function IncomingApproaches({
+  requests,
+  token,
+  onDecided,
+}: {
+  requests: TransferRequest[];
+  token: string | null;
+  onDecided: () => void;
+}) {
+  if (requests.length === 0) return null;
+  return (
+    <section className="card">
+      <h2>Free agents wanting to join ({requests.length})</h2>
+      {requests.map((r) => (
+        <ApproachRow key={r.id} request={r} token={token} onDecided={onDecided} />
+      ))}
+    </section>
+  );
+}
+
+function ApproachRow({
+  request,
+  token,
+  onDecided,
+}: {
+  request: TransferRequest;
+  token: string | null;
+  onDecided: () => void;
+}) {
+  const [fee, setFee] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function decide(decision: 'APPROVE' | 'REJECT') {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(
+        `/transfer-requests/${request.id}/team-decision`,
+        decision === 'APPROVE' ? { decision, fee } : { decision },
+        token,
+      );
+      onDecided();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to decide');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="request-row">
+      <span>
+        <strong>{request.player.name}</strong> wants to join your team
+      </span>
+      <span>
+        <label className="muted" style={{ marginRight: '0.5rem' }}>
+          Fee (R0 = free)
+          <input
+            type="number"
+            min={0}
+            max={VALUE_MAX}
+            value={fee}
+            onChange={(e) => setFee(Number(e.target.value))}
+            disabled={busy}
+            style={{ width: '5rem', marginLeft: '0.4rem' }}
+          />
+        </label>
+        <button disabled={busy} onClick={() => decide('APPROVE')}>
+          Accept
+        </button>
+        <button disabled={busy} onClick={() => decide('REJECT')}>
+          Decline
+        </button>
+      </span>
+      {error && <p className="error">{error}</p>}
+    </div>
   );
 }
 

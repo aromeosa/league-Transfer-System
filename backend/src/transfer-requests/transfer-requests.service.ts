@@ -14,6 +14,7 @@ import {
   RequestType,
   RosterHistory,
   Team,
+  TeamStatus,
   TransferRequest,
   TransferWindow,
   UserRole,
@@ -28,6 +29,7 @@ import { computeFeeSplit, wouldBreachSquadFloor } from './fee-split.util';
 const ACTIVE_REQUEST_STATUSES = [
   RequestStatus.PENDING_RELEASING_APPROVAL,
   RequestStatus.PENDING_PLAYER_APPROVAL,
+  RequestStatus.PENDING_TEAM_APPROVAL,
   RequestStatus.PENDING_PAYMENT,
   RequestStatus.PENDING_LEAGUE_APPROVAL,
   RequestStatus.APPROVED,
@@ -96,23 +98,10 @@ export class TransferRequestsService {
         throw new BadRequestException('Player is already on your roster');
       }
 
-      // Only a free agent signing may be free — anything below the valuation floor
-      // collapses to R0 rather than being rejected, so a low-balled offer just becomes
-      // a free signing instead of forcing the owner to bump it up to the R10 minimum.
-      let proposedFee = dto.proposedFee;
-      if (dto.requestType === RequestType.FREE_AGENT_SIGNING && proposedFee > 0 && proposedFee < BusinessRules.VALUATION_MIN) {
-        proposedFee = 0;
-      }
-      const feeValid =
+      const proposedFee =
         dto.requestType === RequestType.FREE_AGENT_SIGNING
-          ? proposedFee === 0 ||
-            (proposedFee >= BusinessRules.VALUATION_MIN && proposedFee <= BusinessRules.VALUATION_MAX)
-          : proposedFee >= BusinessRules.VALUATION_MIN && proposedFee <= BusinessRules.VALUATION_MAX;
-      if (!feeValid) {
-        throw new BadRequestException(
-          `Fee must be between R${BusinessRules.VALUATION_MIN} and R${BusinessRules.VALUATION_MAX}`,
-        );
-      }
+          ? this.resolveFreeAgentFee(dto.proposedFee)
+          : this.requireBandedFee(dto.proposedFee);
 
       // §1.4 #1/#12 — per-team, per-window cap, capped independently per category.
       // An advisory lock scoped to (team, window, category) closes the race between
@@ -182,6 +171,86 @@ export class TransferRequestsService {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Free Agent approaches a team (POST /transfer-requests/approach) — the reverse of
+  // submit(): the Free Agent initiates instead of the team, so no fee is proposed here
+  // (§ free-agent-fee — free agents never list one themselves); the team sets it, if
+  // any, when they decide via teamDecision below.
+  // ---------------------------------------------------------------------------
+  async approachTeam(teamId: string, actingUser: AuthenticatedUser): Promise<TransferRequest> {
+    if (actingUser.role !== UserRole.FREE_AGENT || !actingUser.playerId) {
+      throw new ForbiddenException('Only a Free Agent may approach a team');
+    }
+    const playerId = actingUser.playerId;
+
+    return this.dataSource.transaction(async (manager) => {
+      const window = await manager.findOne(TransferWindow, { where: { status: WindowStatus.OPEN } });
+      if (!window) {
+        throw new BadRequestException('No transfer window is currently open');
+      }
+
+      const player = await manager.findOne(Player, { where: { id: playerId } });
+      if (!player) {
+        throw new NotFoundException('Player not found');
+      }
+      if (player.status !== PlayerStatus.FREE_AGENT) {
+        throw new BadRequestException('Only a Free Agent can approach a team to join');
+      }
+
+      const team = await manager.findOne(Team, { where: { id: teamId } });
+      if (!team) {
+        throw new NotFoundException('Team not found');
+      }
+      if (team.status !== TeamStatus.ACTIVE) {
+        throw new BadRequestException('You can only approach an active team');
+      }
+
+      // §1.4 #1/#12 — an inbound approach competes for the same free-agent-signing
+      // slots as a team-initiated one, so it's capped the same way.
+      await this.acquireCapLock(manager, teamId, window.id, RequestType.FREE_AGENT_SIGNING);
+      const existingCount = await manager.count(TransferRequest, {
+        where: {
+          requestingTeam: { id: teamId },
+          window: { id: window.id },
+          requestType: RequestType.FREE_AGENT_SIGNING,
+          status: In(ACTIVE_REQUEST_STATUSES),
+        },
+      });
+      const cap = WINDOW_CAP_BY_TYPE[RequestType.FREE_AGENT_SIGNING];
+      if (existingCount >= cap) {
+        throw new ConflictException(
+          `This team has already reached the free agent signing cap of ${cap} for this window`,
+        );
+      }
+
+      const requestingRosterSize = await manager.count(Player, { where: { currentTeam: { id: teamId } } });
+      if (requestingRosterSize + 1 > BusinessRules.ROSTER_MAX) {
+        throw new BadRequestException(`${team.name}'s roster is already at the ${BusinessRules.ROSTER_MAX}-player maximum`);
+      }
+
+      const alreadyPending = await manager.count(TransferRequest, {
+        where: { player: { id: player.id }, requestingTeam: { id: teamId }, status: RequestStatus.PENDING_TEAM_APPROVAL },
+      });
+      if (alreadyPending > 0) {
+        throw new ConflictException('You have already approached this team and are awaiting their decision');
+      }
+
+      const request = manager.create(TransferRequest, {
+        window,
+        player,
+        releasingTeam: null,
+        requestingTeam: team,
+        requestedByUser: { id: actingUser.userId },
+        requestType: RequestType.FREE_AGENT_SIGNING,
+        agreedFee: 0,
+        status: RequestStatus.PENDING_TEAM_APPROVAL,
+        squadFloorFlag: false,
+      });
+      const saved = await manager.save(TransferRequest, request);
+      return manager.findOneOrFail(TransferRequest, { where: { id: saved.id }, relations: DETAIL_RELATIONS });
+    });
+  }
+
   private async acquireCapLock(
     manager: EntityManager,
     teamId: string,
@@ -189,6 +258,30 @@ export class TransferRequestsService {
     requestType: RequestType,
   ): Promise<void> {
     await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${teamId}:${windowId}:${requestType}`]);
+  }
+
+  /**
+   * Only a free agent signing may be free — anything below the valuation floor
+   * collapses to R0 rather than being rejected, so a low-balled offer just becomes a
+   * free signing instead of forcing the payer to bump it up to the R10 minimum.
+   */
+  private resolveFreeAgentFee(fee: number): number {
+    const resolved = fee > 0 && fee < BusinessRules.VALUATION_MIN ? 0 : fee;
+    if (resolved !== 0 && (resolved < BusinessRules.VALUATION_MIN || resolved > BusinessRules.VALUATION_MAX)) {
+      throw new BadRequestException(
+        `Fee must be R0, or between R${BusinessRules.VALUATION_MIN} and R${BusinessRules.VALUATION_MAX}`,
+      );
+    }
+    return resolved;
+  }
+
+  private requireBandedFee(fee: number): number {
+    if (fee < BusinessRules.VALUATION_MIN || fee > BusinessRules.VALUATION_MAX) {
+      throw new BadRequestException(
+        `Fee must be between R${BusinessRules.VALUATION_MIN} and R${BusinessRules.VALUATION_MAX}`,
+      );
+    }
+    return fee;
   }
 
   // ---------------------------------------------------------------------------
@@ -260,6 +353,58 @@ export class TransferRequestsService {
       );
 
       request.status = dto.decision === Decision.APPROVE ? RequestStatus.PENDING_PAYMENT : RequestStatus.REJECTED_BY_PLAYER;
+      if (dto.decision === Decision.REJECT) {
+        request.decidedAt = new Date();
+      }
+      await manager.save(TransferRequest, request);
+      return manager.findOneOrFail(TransferRequest, { where: { id: requestId }, relations: DETAIL_RELATIONS });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Requesting-team decision on an inbound Free Agent approach
+  // (POST /transfer-requests/:id/team-decision)
+  // ---------------------------------------------------------------------------
+  async teamDecision(
+    requestId: string,
+    dto: { decision: Decision; fee?: number; notes?: string },
+    actingUser: AuthenticatedUser,
+  ): Promise<TransferRequest> {
+    return this.dataSource.transaction(async (manager) => {
+      const request = await this.loadForUpdate(manager, requestId);
+
+      if (request.status !== RequestStatus.PENDING_TEAM_APPROVAL) {
+        throw new ConflictException(`Request is not awaiting a team decision (status: ${request.status})`);
+      }
+      if (actingUser.role !== UserRole.TEAM_OWNER || actingUser.teamId !== request.requestingTeam.id) {
+        throw new ForbiddenException('Only the approached team may decide on this request');
+      }
+
+      if (dto.decision === Decision.APPROVE) {
+        // Re-check the roster cap at decision time too — the roster may have filled up
+        // via another path since the approach came in.
+        const requestingRosterSize = await manager.count(Player, {
+          where: { currentTeam: { id: request.requestingTeam.id } },
+        });
+        if (requestingRosterSize + 1 > BusinessRules.ROSTER_MAX) {
+          throw new BadRequestException(`Your roster would exceed the ${BusinessRules.ROSTER_MAX}-player maximum`);
+        }
+        request.agreedFee = this.resolveFreeAgentFee(dto.fee ?? 0);
+      }
+
+      await manager.save(
+        ApprovalAction,
+        manager.create(ApprovalAction, {
+          request,
+          actorUser: { id: actingUser.userId },
+          actorRole: ApprovalActorRole.REQUESTING_TEAM,
+          decision: dto.decision,
+          notes: dto.notes ?? null,
+        }),
+      );
+
+      request.status =
+        dto.decision === Decision.APPROVE ? RequestStatus.PENDING_PAYMENT : RequestStatus.REJECTED_BY_REQUESTING_TEAM;
       if (dto.decision === Decision.REJECT) {
         request.decidedAt = new Date();
       }
