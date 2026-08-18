@@ -228,6 +228,29 @@ h2 {
   background: var(--accent-soft);
 }
 
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-footer .user-chip {
+  padding: 0 0.85rem;
+}
+
+.sidebar-logout {
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
 .shell-main {
   padding: 1.75rem 2rem 4rem;
   max-width: 1400px;

@@ -18,9 +18,9 @@ export function DashboardShell({
 }) {
   return (
     <div className="shell">
-      <Sidebar navItems={navItems} />
+      <Sidebar navItems={navItems} userName={userName} onLogout={onLogout} />
       <main className="shell-main">
-        <Topbar title={title} userName={userName} onLogout={onLogout} />
+        <Topbar title={title} />
         {children}
       </main>
     </div>

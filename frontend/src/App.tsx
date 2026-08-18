@@ -9,6 +9,7 @@ import { TeamOwnerDashboard } from './pages/TeamOwnerDashboard';
 import { FreeAgentDashboard } from './pages/FreeAgentDashboard';
 import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
+import { AdminEventsPage } from './pages/AdminEventsPage';
 import { HowTransfersWorkPage } from './pages/HowTransfersWorkPage';
 import { PaymentResultPage } from './pages/PaymentResultPage';
 import { RequireAuth } from './auth/RequireAuth';
@@ -68,6 +69,14 @@ export default function App() {
         element={
           <RequireAuth role="LEAGUE_ADMIN">
             <AdminTeamsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/events"
+        element={
+          <RequireAuth role="LEAGUE_ADMIN">
+            <AdminEventsPage />
           </RequireAuth>
         }
       />

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { LogOutIcon } from '../components/icons';
 
 export interface NavItem {
   label: string;
@@ -7,7 +8,15 @@ export interface NavItem {
   icon: ReactNode;
 }
 
-export function Sidebar({ navItems }: { navItems: NavItem[] }) {
+export function Sidebar({
+  navItems,
+  userName,
+  onLogout,
+}: {
+  navItems: NavItem[];
+  userName?: string;
+  onLogout: () => void;
+}) {
   const location = useLocation();
 
   return (
@@ -27,6 +36,13 @@ export function Sidebar({ navItems }: { navItems: NavItem[] }) {
           </Link>
         ))}
       </nav>
+      <div className="sidebar-footer">
+        {userName && <span className="user-chip">{userName}</span>}
+        <button type="button" className="sidebar-link sidebar-logout" onClick={onLogout}>
+          <LogOutIcon />
+          Sign out
+        </button>
+      </div>
     </aside>
   );
 }

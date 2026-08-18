@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TableIcon } from '../components/icons';
+import { ClockIcon, HomeIcon, TableIcon } from '../components/icons';
 import { PlayerNameCell } from '../components/PlayerNameCell';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
@@ -44,6 +44,7 @@ export function AdminTeamsPage() {
       navItems={[
         { label: 'Dashboard', path: '/admin', icon: <HomeIcon /> },
         { label: 'Teams & Rosters', path: '/admin/teams', icon: <TableIcon /> },
+        { label: 'All Events', path: '/admin/events', icon: <ClockIcon /> },
       ]}
     >
       {error && <p className="error">{error}</p>}
