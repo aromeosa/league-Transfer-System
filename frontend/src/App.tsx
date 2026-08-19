@@ -11,6 +11,7 @@ import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
 import { AdminEventsPage } from './pages/AdminEventsPage';
 import { HowTransfersWorkPage } from './pages/HowTransfersWorkPage';
+import { LegacyPoolPage } from './pages/LegacyPoolPage';
 import { PaymentResultPage } from './pages/PaymentResultPage';
 import { RequireAuth } from './auth/RequireAuth';
 
@@ -45,6 +46,14 @@ export default function App() {
         element={
           <RequireAuth role="TEAM_OWNER">
             <HowTransfersWorkPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/legacy-pool"
+        element={
+          <RequireAuth role="TEAM_OWNER">
+            <LegacyPoolPage />
           </RequireAuth>
         }
       />

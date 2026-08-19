@@ -30,6 +30,11 @@ export class Player {
   @Column({ name: 'legacy_reason', type: 'enum', enum: LegacyReason, nullable: true })
   legacyReason?: LegacyReason | null;
 
+  /** The club a Legacy Player originally qualified/is associated with — shown in the
+   * Legacy Pool so teams can see provenance before requesting to sign one. */
+  @Column({ name: 'legacy_club_name', type: 'varchar', nullable: true })
+  legacyClubName?: string | null;
+
   /** GK/DF/MD/ST — collected at Free Agent self-signup; nullable for players registered another way. */
   @Column({ type: 'enum', enum: PlayerPosition, nullable: true })
   position?: PlayerPosition | null;

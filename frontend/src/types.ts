@@ -2,6 +2,7 @@ export type UserRole = 'TEAM_OWNER' | 'LEAGUE_ADMIN' | 'FREE_AGENT';
 export type TeamStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
 export type PlayerStatus = 'FREE_AGENT' | 'REGISTERED' | 'LEGACY';
 export type PlayerPosition = 'GK' | 'DF' | 'MD' | 'ST';
+export type LegacyReason = 'QUALIFIED_MAIN_EVENT' | 'ASSISTED_QUALIFICATION';
 export type RequestType = 'FREE_AGENT_SIGNING' | 'CLUB_TRANSFER' | 'LEGACY_TRANSFER';
 export type RequestStatus =
   | 'PENDING_RELEASING_APPROVAL'
@@ -32,7 +33,8 @@ export interface Player {
   name: string;
   status: PlayerStatus;
   originType: 'FREE_AGENT_ORIGIN' | 'DIRECT_REGISTRATION';
-  legacyReason?: string | null;
+  legacyReason?: LegacyReason | null;
+  legacyClubName?: string | null;
   position?: PlayerPosition | null;
   transferValue?: number | null;
   transferCount: number;
