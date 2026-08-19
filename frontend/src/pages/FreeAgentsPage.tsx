@@ -7,11 +7,13 @@ import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TableIcon, UserIcon, UsersIcon } from '../components/icons';
 import { useAuth } from '../auth/AuthContext';
 
-export const FREE_AGENT_PUBLIC_NAV = [
-  { label: 'Free Agents', path: '/free-agents', icon: <HomeIcon /> },
-  { label: 'Sign up', path: '/register-free-agent', icon: <UserIcon /> },
-  { label: 'View Teams', path: '/teams', icon: <TableIcon /> },
-];
+export function getFreeAgentPublicNav(loggedIn: boolean) {
+  return [
+    { label: 'Free Agents', path: '/free-agents', icon: <HomeIcon /> },
+    ...(loggedIn ? [] : [{ label: 'Sign up', path: '/register-free-agent', icon: <UserIcon /> }]),
+    { label: 'View Teams', path: '/teams', icon: <TableIcon /> },
+  ];
+}
 
 export function FreeAgentsPage() {
   const { user, logout } = useAuth();
@@ -36,7 +38,7 @@ export function FreeAgentsPage() {
   return (
     <DashboardShell
       title="Free Agents"
-      navItems={FREE_AGENT_PUBLIC_NAV}
+      navItems={getFreeAgentPublicNav(!!user)}
       userName={user?.name}
       onLogout={user ? logout : undefined}
     >
