@@ -1,6 +1,9 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useRef, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
+import { TeamLogo } from './TeamLogo';
+import { CameraIcon } from './icons';
+import { resizeImageToDataUrl } from '../utils/resizeImage';
 
 // Mirrors the backend's roster size constraint (§4.2 / BusinessRules.ROSTER_MIN/MAX).
 const MIN_PLAYERS = 5;
@@ -36,13 +39,28 @@ export function TeamRegistrationForm({
   submitLabel: string;
   onSuccess: () => void;
 }) {
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
   const [players, setPlayers] = useState<PlayerRow[]>(emptyRoster);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  async function handleLogoFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setLogoError(null);
+    try {
+      setLogoDataUrl(await resizeImageToDataUrl(file));
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : 'Failed to load image');
+    }
+  }
 
   function addPlayer() {
     setPlayers((rows) => (rows.length >= MAX_PLAYERS ? rows : [...rows, { name: '', value: '', idNumber: '' }]));
@@ -65,6 +83,7 @@ export function TeamRegistrationForm({
         endpoint,
         {
           name,
+          ...(logoDataUrl ? { logoDataUrl } : {}),
           owner: { name: ownerName, email: ownerEmail, password: ownerPassword },
           players: players
             .filter((p) => p.name.trim())
@@ -77,6 +96,7 @@ export function TeamRegistrationForm({
         token,
       );
       setName('');
+      setLogoDataUrl(null);
       setOwnerName('');
       setOwnerEmail('');
       setOwnerPassword('');
@@ -96,6 +116,28 @@ export function TeamRegistrationForm({
           Team name
           <input value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
+        <span>
+          Team logo (optional)
+          <span className="team-logo-picker">
+            <button
+              type="button"
+              className="team-logo-wrap editable"
+              onClick={() => logoInputRef.current?.click()}
+              aria-label="Upload a team logo"
+              title="Upload a team logo"
+            >
+              <TeamLogo logoUrl={logoDataUrl} />
+              <span className="team-logo-badge">
+                <CameraIcon />
+              </span>
+            </button>
+            <input ref={logoInputRef} type="file" accept="image/*" hidden onChange={handleLogoFile} />
+            <button type="button" className="btn-secondary" onClick={() => logoInputRef.current?.click()}>
+              {logoDataUrl ? 'Change logo' : 'Upload logo'}
+            </button>
+          </span>
+          {logoError && <p className="error">{logoError}</p>}
+        </span>
         <label>
           Owner name
           <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} required />

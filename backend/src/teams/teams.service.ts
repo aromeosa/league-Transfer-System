@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -14,6 +14,7 @@ import {
 } from '../entities';
 import { isUniqueViolation } from '../common/db-errors.util';
 import { hashIdNumber } from '../players/id-number.util';
+import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { CreateTeamDto } from './dto/create-team.dto';
 
 @Injectable()
@@ -47,7 +48,10 @@ export class TeamsService {
 
     try {
       return await this.dataSource.transaction(async (manager) => {
-        const team = await manager.save(Team, manager.create(Team, { name: dto.name, status }));
+        const team = await manager.save(
+          Team,
+          manager.create(Team, { name: dto.name, status, logoUrl: dto.logoDataUrl ?? null }),
+        );
 
         const passwordHash = await bcrypt.hash(dto.owner.password, 10);
         await manager.save(
@@ -91,6 +95,20 @@ export class TeamsService {
       }
       throw err;
     }
+  }
+
+  /** Team Owner uploads/replaces their own team's logo — self-service, not window-locked. */
+  async updateOwnLogo(logoDataUrl: string, actingUser: AuthenticatedUser): Promise<Team> {
+    if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
+      throw new ForbiddenException('Only a Team Owner may manage their own team logo');
+    }
+    const team = await this.teamRepo.findOne({ where: { id: actingUser.teamId } });
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+    team.logoUrl = logoDataUrl;
+    await this.teamRepo.save(team);
+    return this.getTeam(team.id);
   }
 
   async getTeam(teamId: string, repo: Repository<Team> = this.teamRepo): Promise<Team> {

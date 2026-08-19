@@ -5,6 +5,7 @@ import type { Player, Team } from '../types';
 import { StatTile } from '../components/StatTile';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
+import { TeamLogo } from '../components/TeamLogo';
 import { TableIcon, UsersIcon } from '../components/icons';
 import { DashboardShell } from '../layout/DashboardShell';
 import { getNavForUser } from '../layout/nav';
@@ -64,8 +65,12 @@ export function PublicTeamsPage() {
 
       {teams?.map((team) => (
         <section className="card" key={team.id}>
+          <div className="team-name-cell">
+            <TeamLogo logoUrl={team.logoUrl} />
+            <h2>{team.name}</h2>
+          </div>
           {isFreeAgent && <ApproachTeamButton team={team} token={token} />}
-          <CollapsibleList label={team.name} items={team.roster ?? []} getName={(p) => p.name}>
+          <CollapsibleList label="Roster" items={team.roster ?? []} getName={(p) => p.name}>
             {(filtered) => (
               <table>
                 <thead>

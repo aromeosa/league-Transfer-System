@@ -60,6 +60,7 @@ export interface Team {
   id: string;
   name: string;
   status: TeamStatus;
+  logoUrl?: string | null;
   roster?: Player[];
   ownerAccount?: { id: string; name: string; email: string };
 }

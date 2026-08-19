@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -7,6 +7,7 @@ import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { TeamStatus, UserRole } from '../entities';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
+import { UpdateTeamLogoDto } from './dto/update-team-logo.dto';
 
 /**
  * Guards are per-method rather than class-level (unlike TeamsController's siblings)
@@ -43,6 +44,14 @@ export class TeamsController {
   @Get('public')
   findPublicActive() {
     return this.teamsService.findPublicActive();
+  }
+
+  /** Team Owner uploads/replaces their own team's logo — self-service, works anytime. */
+  @Patch('me/logo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.TEAM_OWNER)
+  updateOwnLogo(@Body() dto: UpdateTeamLogoDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.teamsService.updateOwnLogo(dto.logoDataUrl, user);
   }
 
   @Get(':id')

@@ -6,6 +6,7 @@ import type { LegacyReason, LegacyTeam, Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { ADMIN_NAV } from '../layout/nav';
 import { PlayerNameCell } from '../components/PlayerNameCell';
+import { TeamLogo } from '../components/TeamLogo';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 
@@ -75,7 +76,12 @@ export function AdminTeamsPage() {
           <tbody>
             {teams.map((t) => (
               <tr key={t.id}>
-                <td>{t.name}</td>
+                <td>
+                  <span className="team-name-cell">
+                    <TeamLogo logoUrl={t.logoUrl} />
+                    {t.name}
+                  </span>
+                </td>
                 <td>
                   <span
                     className={`badge ${t.status === 'ACTIVE' ? 'badge-good' : t.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}

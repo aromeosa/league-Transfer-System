@@ -668,6 +668,83 @@ button + button {
   opacity: 0.6;
 }
 
+.team-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.team-logo-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.team-logo-wrap.editable {
+  cursor: pointer;
+}
+
+.team-logo,
+.team-logo-placeholder {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.team-logo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.team-logo-placeholder svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.team-logo-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+}
+
+.team-logo-badge svg {
+  width: 0.55rem;
+  height: 0.55rem;
+  stroke-width: 2.4;
+}
+
+.team-logo-wrap:disabled .team-logo-badge {
+  opacity: 0.6;
+}
+
+.team-logo-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
 /* ---------- Player picker (search / browse-by-team combobox) ---------- */
 
 .player-picker {
