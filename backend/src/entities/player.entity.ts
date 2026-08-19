@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { LegacyReason, PlayerOrigin, PlayerPosition, PlayerStatus } from './enums';
 import { Team } from './team.entity';
 import { UserAccount } from './user-account.entity';
@@ -68,6 +68,7 @@ export class Player {
   @Column({ name: 'id_number_hash', type: 'varchar', length: 64, nullable: true, unique: true })
   idNumberHash?: string | null;
 
+  @Expose()
   get idVerified(): boolean {
     return !!this.idNumberHash;
   }
