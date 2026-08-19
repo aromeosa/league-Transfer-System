@@ -41,16 +41,6 @@ export function FreeAgentsPage() {
         </span>
       </header>
 
-      <section className="card">
-        <h2>Want to join the pool?</h2>
-        <p className="muted">
-          Sign up as a Free Agent so any team can sign you during a transfer window.
-        </p>
-        <Link to="/register-free-agent">
-          <button type="button">Sign up as a Free Agent</button>
-        </Link>
-      </section>
-
       {error && <p className="error">{error}</p>}
       {!players && !error && <p>Loading…</p>}
 
