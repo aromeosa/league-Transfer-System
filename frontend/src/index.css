@@ -514,9 +514,16 @@ button + button {
   max-width: 420px;
 }
 
+/* The roster fieldset packs a name, value, ID and remove-button into one row —
+   420px isn't enough room for all four without clipping, so let this form grow. */
+.stacked-form:has(.player-row) {
+  max-width: 640px;
+}
+
 .stacked-form fieldset {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+  padding: 0.85rem 1rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

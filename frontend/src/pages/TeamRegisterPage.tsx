@@ -9,7 +9,7 @@ export function TeamRegisterPage() {
   return (
     <div className="centered-page">
       <ThemeToggleButton className="theme-toggle-corner" />
-      <div className="card" style={{ maxWidth: 480 }}>
+      <div className="card" style={{ maxWidth: 720 }}>
         <h1>Register your team</h1>
         {submitted ? (
           <>
