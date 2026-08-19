@@ -1,17 +1,11 @@
 import { useAuth } from '../auth/AuthContext';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { TEAM_OWNER_NAV } from '../layout/nav';
 
 export function HowTransfersWorkPage() {
   const { user, logout } = useAuth();
 
-  const navItems = [
-    { label: 'Dashboard', path: '/team', icon: <HomeIcon /> },
-    { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
-    { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
-    { label: 'Legacy Pool', path: '/legacy-pool', icon: <UsersIcon /> },
-    { label: 'How Transfers Work', path: '/how-it-works', icon: <TransferIcon /> },
-  ];
+  const navItems = TEAM_OWNER_NAV;
 
   return (
     <DashboardShell title="How Transfers Work" userName={user?.name} onLogout={logout} navItems={navItems}>

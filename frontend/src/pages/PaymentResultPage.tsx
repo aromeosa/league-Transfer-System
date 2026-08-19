@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Payment } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { TEAM_OWNER_NAV } from '../layout/nav';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLLS = 15; // ~30s — PayFast's ITN usually arrives within a few seconds
@@ -52,11 +52,7 @@ export function PaymentResultPage() {
     };
   }, [outcome, requestId, token]);
 
-  const navItems = [
-    { label: 'Dashboard', path: '/team', icon: <HomeIcon /> },
-    { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
-    { label: 'How Transfers Work', path: '/how-it-works', icon: <TransferIcon /> },
-  ];
+  const navItems = TEAM_OWNER_NAV;
 
   return (
     <DashboardShell title="Payment" userName={user?.name} onLogout={logout} navItems={navItems}>

@@ -5,7 +5,8 @@ import { api, ApiError } from '../api/client';
 import type { DeregistrationReason, Player, PlayerDeregistrationRequest, RequestType, Team, TransferRequest, TransferWindow } from '../types';
 import { StatTile } from '../components/StatTile';
 import { DashboardShell } from '../layout/DashboardShell';
-import { CameraIcon, HomeIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { TEAM_OWNER_NAV } from '../layout/nav';
+import { CameraIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { RequestTable } from '../components/RequestTable';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
@@ -71,13 +72,7 @@ export function TeamOwnerDashboard() {
     [team],
   );
 
-  const navItems = [
-    { label: 'Dashboard', path: '/team', icon: <HomeIcon /> },
-    { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
-    { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
-    { label: 'Legacy Pool', path: '/legacy-pool', icon: <UsersIcon /> },
-    { label: 'How Transfers Work', path: '/how-it-works', icon: <TransferIcon /> },
-  ];
+  const navItems = TEAM_OWNER_NAV;
 
   if (!team) {
     return (

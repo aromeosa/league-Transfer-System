@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { PlayerPosition } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
-import { getFreeAgentPublicNav } from './FreeAgentsPage';
+import { getNavForUser } from '../layout/nav';
 import { useAuth } from '../auth/AuthContext';
 
 const POSITIONS: { value: PlayerPosition; label: string }[] = [
@@ -49,7 +49,7 @@ export function FreeAgentRegisterPage() {
   return (
     <DashboardShell
       title="Sign up as a Free Agent"
-      navItems={getFreeAgentPublicNav(!!user)}
+      navItems={getNavForUser(user)}
       userName={user?.name}
       onLogout={user ? logout : undefined}
     >

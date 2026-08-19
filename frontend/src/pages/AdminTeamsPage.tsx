@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { LegacyReason, LegacyTeam, Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
-import { ClockIcon, HomeIcon, TableIcon } from '../components/icons';
+import { ADMIN_NAV } from '../layout/nav';
 import { PlayerNameCell } from '../components/PlayerNameCell';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
@@ -57,11 +57,7 @@ export function AdminTeamsPage() {
       title="Teams & Rosters"
       userName={user?.name}
       onLogout={logout}
-      navItems={[
-        { label: 'Dashboard', path: '/admin', icon: <HomeIcon /> },
-        { label: 'Teams & Rosters', path: '/admin/teams', icon: <TableIcon /> },
-        { label: 'All Events', path: '/admin/events', icon: <ClockIcon /> },
-      ]}
+      navItems={ADMIN_NAV}
     >
       {error && <p className="error">{error}</p>}
 

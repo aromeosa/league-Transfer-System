@@ -8,7 +8,8 @@ import { PaymentTimeline } from '../components/PaymentTimeline';
 import { StatTile } from '../components/StatTile';
 import { TeamRegistrationForm } from '../components/TeamRegistrationForm';
 import { DashboardShell } from '../layout/DashboardShell';
-import { ClockIcon, HomeIcon, TableIcon, TransferIcon, UserCogIcon, UsersIcon } from '../components/icons';
+import { ADMIN_NAV } from '../layout/nav';
+import { TableIcon, TransferIcon, UserCogIcon, UsersIcon } from '../components/icons';
 
 export function LeagueAdminDashboard() {
   const { user, token, logout } = useAuth();
@@ -69,11 +70,7 @@ export function LeagueAdminDashboard() {
       title="League Admin Dashboard"
       userName={user?.name}
       onLogout={logout}
-      navItems={[
-        { label: 'Dashboard', path: '/admin', icon: <HomeIcon /> },
-        { label: 'Teams & Rosters', path: '/admin/teams', icon: <TableIcon /> },
-        { label: 'All Events', path: '/admin/events', icon: <ClockIcon /> },
-      ]}
+      navItems={ADMIN_NAV}
     >
       {error && <p className="error">{error}</p>}
 

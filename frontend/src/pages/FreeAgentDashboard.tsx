@@ -9,7 +9,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { DashboardShell } from '../layout/DashboardShell';
 import { CameraIcon, TransferIcon } from '../components/icons';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
-import { getFreeAgentPublicNav } from './FreeAgentsPage';
+import { getFreeAgentNav } from '../layout/nav';
 
 export function FreeAgentDashboard() {
   const { user, token, logout } = useAuth();
@@ -37,7 +37,7 @@ export function FreeAgentDashboard() {
 
   const pendingOffers = useMemo(() => requests.filter((r) => r.status === 'PENDING_PLAYER_APPROVAL'), [requests]);
 
-  const navItems = getFreeAgentPublicNav(true);
+  const navItems = getFreeAgentNav(true);
 
   return (
     <DashboardShell title={`${user?.name ?? ''} — Free Agent`} userName={user?.name} onLogout={logout} navItems={navItems}>
