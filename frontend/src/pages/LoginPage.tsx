@@ -13,7 +13,14 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (user) {
-    const home = user.role === 'LEAGUE_ADMIN' ? '/admin' : user.role === 'FREE_AGENT' ? '/free-agent' : '/team';
+    const home =
+      user.role === 'LEAGUE_ADMIN'
+        ? '/admin'
+        : user.role === 'FREE_AGENT'
+          ? '/free-agent'
+          : user.role === 'LEGACY_TEAM_OWNER'
+            ? '/legacy-team'
+            : '/team';
     return <Navigate to={home} replace />;
   }
 

@@ -3,6 +3,9 @@ export enum UserRole {
   LEAGUE_ADMIN = 'LEAGUE_ADMIN',
   /** A self-registered Free Agent — logs in to accept/reject signing offers (see FreeAgentDto). */
   FREE_AGENT = 'FREE_AGENT',
+  /** Represents a curated LegacyTeam — logs in to approve/reject requests to sign one
+   *  of that legacy team's players (see TransferRequestsService.legacyTeamDecision). */
+  LEGACY_TEAM_OWNER = 'LEGACY_TEAM_OWNER',
 }
 
 /** Self-registered teams start PENDING_APPROVAL; admin-created teams start ACTIVE. */
@@ -60,6 +63,9 @@ export enum RequestStatus {
   /** A Free Agent approached this team directly — awaiting the team owner's decision
    *  (reverse of the usual team-initiates flow; see TransferRequestsService.approachTeam). */
   PENDING_TEAM_APPROVAL = 'PENDING_TEAM_APPROVAL',
+  /** A team requested to sign an unattached Legacy Player — awaiting that legacy
+   *  team's own owner account to approve (see TransferRequestsService.legacyTeamDecision). */
+  PENDING_LEGACY_TEAM_APPROVAL = 'PENDING_LEGACY_TEAM_APPROVAL',
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PENDING_LEAGUE_APPROVAL = 'PENDING_LEAGUE_APPROVAL',
   APPROVED = 'APPROVED',
@@ -67,6 +73,8 @@ export enum RequestStatus {
   REJECTED_BY_PLAYER = 'REJECTED_BY_PLAYER',
   /** The approached team turned down a Free Agent's approach. */
   REJECTED_BY_REQUESTING_TEAM = 'REJECTED_BY_REQUESTING_TEAM',
+  /** The legacy team's owner turned down a request to sign one of their players. */
+  REJECTED_BY_LEGACY_TEAM = 'REJECTED_BY_LEGACY_TEAM',
   REJECTED_BY_LEAGUE_ADMIN = 'REJECTED_BY_LEAGUE_ADMIN',
   CANCELLED_WINDOW_CLOSED = 'CANCELLED_WINDOW_CLOSED',
   /** A competing request for the same player was approved first (see leagueDecision). */
@@ -78,6 +86,8 @@ export enum ApprovalActorRole {
   /** The team being approached, deciding on a Free-Agent-initiated approach. */
   REQUESTING_TEAM = 'REQUESTING_TEAM',
   PLAYER = 'PLAYER',
+  /** The legacy team's own owner account, deciding on a request to sign their player. */
+  LEGACY_TEAM = 'LEGACY_TEAM',
   LEAGUE_ADMIN = 'LEAGUE_ADMIN',
 }
 

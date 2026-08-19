@@ -6,6 +6,7 @@ export interface JwtPayload {
   role: UserRole;
   teamId: string | null;
   playerId: string | null;
+  legacyTeamId: string | null;
 }
 
 export interface AuthenticatedUser {
@@ -14,4 +15,5 @@ export interface AuthenticatedUser {
   role: UserRole;
   teamId: string | null;
   playerId: string | null;
+  legacyTeamId: string | null;
 }

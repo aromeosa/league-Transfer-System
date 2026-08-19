@@ -174,7 +174,16 @@ export function AdminTeamsPage() {
         ) : (
           <ul>
             {legacyTeams.map((t) => (
-              <li key={t.id}>{t.name}</li>
+              <li key={t.id}>
+                {t.name}
+                {t.ownerAccount ? (
+                  <span className="muted"> — owner: {t.ownerAccount.name} ({t.ownerAccount.email})</span>
+                ) : (
+                  <span className="badge badge-bad" style={{ marginLeft: '0.5rem' }}>
+                    No owner — requests skip approval
+                  </span>
+                )}
+              </li>
             ))}
           </ul>
         )}
@@ -292,19 +301,37 @@ function DeregisterLegacyPlayerButton({
   );
 }
 
+/**
+ * Also creates that legacy team's own owner account in the same call — the account
+ * that logs in and must approve any request to sign one of this team's players (see
+ * TransferRequestsService.legacyTeamDecision). Without an owner, requests for this
+ * team's players just fall back to going straight to payment, unapproved.
+ */
 function AddLegacyTeamForm({ token, onAdded }: { token: string | null; onAdded: () => void }) {
   const [name, setName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const valid = name.trim() && ownerName.trim() && ownerEmail.trim() && ownerPassword.length >= 8;
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!valid) return;
     setError(null);
     setSubmitting(true);
     try {
-      await api.post('/legacy-teams', { name: name.trim() }, token);
+      await api.post(
+        '/legacy-teams',
+        { name: name.trim(), owner: { name: ownerName.trim(), email: ownerEmail.trim(), password: ownerPassword } },
+        token,
+      );
       setName('');
+      setOwnerName('');
+      setOwnerEmail('');
+      setOwnerPassword('');
       onAdded();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to add legacy team');
@@ -319,7 +346,19 @@ function AddLegacyTeamForm({ token, onAdded }: { token: string | null; onAdded: 
         Legacy team name
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <button type="submit" disabled={!name.trim() || submitting}>
+      <label>
+        Owner name
+        <input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+      </label>
+      <label>
+        Owner email
+        <input type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
+      </label>
+      <label>
+        Owner password
+        <input type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} minLength={8} />
+      </label>
+      <button type="submit" disabled={!valid || submitting}>
         {submitting ? 'Adding…' : 'Add legacy team'}
       </button>
       {error && <p className="error">{error}</p>}

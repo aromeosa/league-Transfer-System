@@ -7,6 +7,7 @@ const HOME_PATH: Record<UserRole, string> = {
   LEAGUE_ADMIN: '/admin',
   TEAM_OWNER: '/team',
   FREE_AGENT: '/free-agent',
+  LEGACY_TEAM_OWNER: '/legacy-team',
 };
 
 export function RequireAuth({ role, children }: { role: UserRole; children: ReactNode }) {

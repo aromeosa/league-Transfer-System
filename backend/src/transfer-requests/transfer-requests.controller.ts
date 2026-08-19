@@ -61,6 +61,13 @@ export class TransferRequestsController {
     return this.service.teamDecision(id, dto, user);
   }
 
+  /** The legacy team's own owner account accepts/rejects a request to sign one of
+   * their players — no ActiveTeamGuard, they don't own a real Team. */
+  @Post(':id/legacy-team-decision')
+  legacyTeamDecision(@Param('id') id: string, @Body() dto: DecisionDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.legacyTeamDecision(id, dto, user);
+  }
+
   @Post(':id/payment/initiate')
   @UseGuards(ActiveTeamGuard)
   initiatePayment(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
