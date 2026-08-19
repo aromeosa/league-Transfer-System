@@ -9,7 +9,8 @@ import { useAuth } from '../auth/AuthContext';
 
 export function getFreeAgentPublicNav(loggedIn: boolean) {
   return [
-    { label: 'Free Agents', path: '/free-agents', icon: <HomeIcon /> },
+    ...(loggedIn ? [{ label: 'Dashboard', path: '/free-agent', icon: <HomeIcon /> }] : []),
+    { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
     ...(loggedIn ? [] : [{ label: 'Sign up', path: '/register-free-agent', icon: <UserIcon /> }]),
     { label: 'View Teams', path: '/teams', icon: <TableIcon /> },
   ];

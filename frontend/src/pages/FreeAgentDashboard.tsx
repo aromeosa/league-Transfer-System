@@ -7,8 +7,9 @@ import { StatTile } from '../components/StatTile';
 import { RequestTable } from '../components/RequestTable';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { DashboardShell } from '../layout/DashboardShell';
-import { CameraIcon, HomeIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { CameraIcon, TransferIcon } from '../components/icons';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
+import { getFreeAgentPublicNav } from './FreeAgentsPage';
 
 export function FreeAgentDashboard() {
   const { user, token, logout } = useAuth();
@@ -36,11 +37,7 @@ export function FreeAgentDashboard() {
 
   const pendingOffers = useMemo(() => requests.filter((r) => r.status === 'PENDING_PLAYER_APPROVAL'), [requests]);
 
-  const navItems = [
-    { label: 'Dashboard', path: '/free-agent', icon: <HomeIcon /> },
-    { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
-    { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
-  ];
+  const navItems = getFreeAgentPublicNav(true);
 
   return (
     <DashboardShell title={`${user?.name ?? ''} — Free Agent`} userName={user?.name} onLogout={logout} navItems={navItems}>
@@ -69,7 +66,7 @@ export function FreeAgentDashboard() {
       </section>
 
       <section className="card">
-        <h2>All requests involving your team</h2>
+        <h2>All requests involving you</h2>
         <RequestTable requests={requests} />
       </section>
     </DashboardShell>
