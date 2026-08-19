@@ -7,6 +7,7 @@ import { PublicTeamsPage } from './pages/PublicTeamsPage';
 import { FreeAgentsPage } from './pages/FreeAgentsPage';
 import { TeamOwnerDashboard } from './pages/TeamOwnerDashboard';
 import { FreeAgentDashboard } from './pages/FreeAgentDashboard';
+import { LegacyTeamOwnerDashboard } from './pages/LegacyTeamOwnerDashboard';
 import { LeagueAdminDashboard } from './pages/LeagueAdminDashboard';
 import { AdminTeamsPage } from './pages/AdminTeamsPage';
 import { AdminEventsPage } from './pages/AdminEventsPage';
@@ -38,6 +39,14 @@ export default function App() {
         element={
           <RequireAuth role="FREE_AGENT">
             <FreeAgentDashboard />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/legacy-team"
+        element={
+          <RequireAuth role="LEGACY_TEAM_OWNER">
+            <LegacyTeamOwnerDashboard />
           </RequireAuth>
         }
       />

@@ -24,7 +24,7 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.userRepo.findOne({
       where: { email },
-      relations: ['team', 'player'],
+      relations: ['team', 'player', 'legacyTeam'],
     });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password');
@@ -36,6 +36,7 @@ export class AuthService {
       role: user.role,
       teamId: user.team?.id ?? null,
       playerId: user.player?.id ?? null,
+      legacyTeamId: user.legacyTeam?.id ?? null,
     };
 
     return {
@@ -50,6 +51,8 @@ export class AuthService {
         // for why enforcement never trusts a token's team status.
         teamStatus: user.team?.status ?? null,
         playerId: user.player?.id ?? null,
+        legacyTeamId: user.legacyTeam?.id ?? null,
+        legacyTeamName: user.legacyTeam?.name ?? null,
       },
     };
   }

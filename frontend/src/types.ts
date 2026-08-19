@@ -1,4 +1,4 @@
-export type UserRole = 'TEAM_OWNER' | 'LEAGUE_ADMIN' | 'FREE_AGENT';
+export type UserRole = 'TEAM_OWNER' | 'LEAGUE_ADMIN' | 'FREE_AGENT' | 'LEGACY_TEAM_OWNER';
 export type TeamStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
 export type PlayerStatus = 'FREE_AGENT' | 'REGISTERED' | 'LEGACY';
 export type PlayerPosition = 'GK' | 'DF' | 'MD' | 'ST';
@@ -8,12 +8,14 @@ export type RequestStatus =
   | 'PENDING_RELEASING_APPROVAL'
   | 'PENDING_PLAYER_APPROVAL'
   | 'PENDING_TEAM_APPROVAL'
+  | 'PENDING_LEGACY_TEAM_APPROVAL'
   | 'PENDING_PAYMENT'
   | 'PENDING_LEAGUE_APPROVAL'
   | 'APPROVED'
   | 'REJECTED_BY_RELEASING_TEAM'
   | 'REJECTED_BY_PLAYER'
   | 'REJECTED_BY_REQUESTING_TEAM'
+  | 'REJECTED_BY_LEGACY_TEAM'
   | 'REJECTED_BY_LEAGUE_ADMIN'
   | 'CANCELLED_WINDOW_CLOSED'
   | 'CANCELLED_PLAYER_UNAVAILABLE';
@@ -26,11 +28,14 @@ export interface CurrentUser {
   teamId: string | null;
   teamStatus: TeamStatus | null;
   playerId: string | null;
+  legacyTeamId: string | null;
+  legacyTeamName: string | null;
 }
 
 export interface LegacyTeam {
   id: string;
   name: string;
+  ownerAccount?: { id: string; name: string; email: string } | null;
   createdAt: string;
 }
 

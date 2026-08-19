@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { UserRole } from './enums';
 import { Team } from './team.entity';
 import { Player } from './player.entity';
+import { LegacyTeam } from './legacy-team.entity';
 
 @Entity('user_accounts')
 export class UserAccount {
@@ -31,6 +32,11 @@ export class UserAccount {
   @OneToOne(() => Player, (player) => player.account, { nullable: true })
   @JoinColumn({ name: 'player_id' })
   player?: Player | null;
+
+  /** One account per LegacyTeam — null except for LEGACY_TEAM_OWNER accounts. */
+  @OneToOne(() => LegacyTeam, (legacyTeam) => legacyTeam.ownerAccount, { nullable: true })
+  @JoinColumn({ name: 'legacy_team_id' })
+  legacyTeam?: LegacyTeam | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

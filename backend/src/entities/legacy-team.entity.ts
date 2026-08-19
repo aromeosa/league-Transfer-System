@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { UserAccount } from './user-account.entity';
 
 /**
  * The curated list of clubs eligible to have Legacy Players — admin-managed. A player
@@ -13,6 +14,11 @@ export class LegacyTeam {
 
   @Column({ unique: true })
   name: string;
+
+  /** Inverse side — the owning FK (`legacy_team_id`) lives on UserAccount, mirroring
+   * Team.ownerAccount. Null for a legacy team created before this existed. */
+  @OneToOne(() => UserAccount, (owner) => owner.legacyTeam)
+  ownerAccount?: UserAccount | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

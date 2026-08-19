@@ -17,6 +17,6 @@ export class LegacyTeamsController {
 
   @Post()
   create(@Body() dto: CreateLegacyTeamDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.service.create(dto.name, user);
+    return this.service.create(dto.name, dto.owner, user);
   }
 }
