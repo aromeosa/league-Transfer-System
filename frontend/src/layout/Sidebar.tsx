@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LogOutIcon } from '../components/icons';
+import { Logo } from '../components/Logo';
 
 export interface NavItem {
   label: string;
@@ -21,9 +22,7 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-brand">
-        5quad<span>League</span>
-      </div>
+      <Logo className="sidebar-brand" />
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <Link
