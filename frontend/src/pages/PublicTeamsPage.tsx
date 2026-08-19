@@ -8,6 +8,7 @@ import { ThemeToggleButton } from '../components/ThemeToggleButton';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 import { TableIcon, UsersIcon } from '../components/icons';
+import { Logo } from '../components/Logo';
 
 const ROSTER_MAX = 15;
 
@@ -39,7 +40,10 @@ export function PublicTeamsPage() {
   return (
     <div className="page">
       <header className="topbar">
-        <strong>5quadLeague — Teams</strong>
+        <span className="topbar-brand">
+          <Logo />
+          <strong>Teams</strong>
+        </span>
         <span className="shell-topbar-actions">
           <ThemeToggleButton />
           <Link to="/free-agents">Free agents</Link>

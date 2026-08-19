@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import type { UserRole } from '../types';
 
-const HOME_PATH: Record<UserRole, string> = {
+export const HOME_PATH: Record<UserRole, string> = {
   LEAGUE_ADMIN: '/admin',
   TEAM_OWNER: '/team',
   FREE_AGENT: '/free-agent',

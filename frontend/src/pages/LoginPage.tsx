@@ -4,6 +4,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
 import { ThemeToggleButton } from '../components/ThemeToggleButton';
+import { Logo } from '../components/Logo';
+import { HOME_PATH } from '../auth/RequireAuth';
 
 export function LoginPage() {
   const { login, user } = useAuth();
@@ -13,15 +15,7 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (user) {
-    const home =
-      user.role === 'LEAGUE_ADMIN'
-        ? '/admin'
-        : user.role === 'FREE_AGENT'
-          ? '/free-agent'
-          : user.role === 'LEGACY_TEAM_OWNER'
-            ? '/legacy-team'
-            : '/team';
-    return <Navigate to={home} replace />;
+    return <Navigate to={HOME_PATH[user.role]} replace />;
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -41,8 +35,8 @@ export function LoginPage() {
     <div className="centered-page">
       <ThemeToggleButton className="theme-toggle-corner" />
       <form className="card" onSubmit={handleSubmit}>
-        <h1>5quadLeague Transfer System</h1>
-        <p className="muted">Sign in as a Team Owner, Free Agent, or League Admin.</p>
+        <Logo className="auth-logo" />
+        <p className="muted">Transfer System — sign in as a Team Owner, Free Agent, or League Admin.</p>
 
         <label>
           Email

@@ -7,6 +7,7 @@ import { StatTile } from '../components/StatTile';
 import { ThemeToggleButton } from '../components/ThemeToggleButton';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { UsersIcon } from '../components/icons';
+import { Logo } from '../components/Logo';
 
 const POSITIONS: { value: PlayerPosition; label: string }[] = [
   { value: 'GK', label: 'Goalkeeper (GK)' },
@@ -74,7 +75,10 @@ export function FreeAgentsPage() {
   return (
     <div className="page">
       <header className="topbar">
-        <strong>5quadLeague — Free Agents</strong>
+        <span className="topbar-brand">
+          <Logo />
+          <strong>Free Agents</strong>
+        </span>
         <span className="shell-topbar-actions">
           <ThemeToggleButton />
           <Link to="/teams">View teams</Link>
