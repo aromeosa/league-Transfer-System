@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { LegacyReason, Player, Team } from '../types';
+import type { LegacyReason, LegacyTeam, Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { ClockIcon, HomeIcon, TableIcon } from '../components/icons';
 import { PlayerNameCell } from '../components/PlayerNameCell';
@@ -18,17 +18,23 @@ export function AdminTeamsPage() {
   const { user, token, logout } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [legacyTeams, setLegacyTeams] = useState<LegacyTeam[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.get<Team[]>('/teams', token), api.get<Player[]>('/players', token)])
-      .then(([teamsRes, playersRes]) => {
+    Promise.all([
+      api.get<Team[]>('/teams', token),
+      api.get<Player[]>('/players', token),
+      api.get<LegacyTeam[]>('/legacy-teams', token),
+    ])
+      .then(([teamsRes, playersRes, legacyTeamsRes]) => {
         if (cancelled) return;
         setTeams(teamsRes);
         setPlayers(playersRes);
+        setLegacyTeams(legacyTeamsRes);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load teams data');
@@ -158,6 +164,23 @@ export function AdminTeamsPage() {
       </section>
 
       <section className="card">
+        <h2>Legacy Teams ({legacyTeams.length})</h2>
+        <p className="muted">
+          A legacy player's club must come from this list — add a team here before adding any of its players.
+        </p>
+        {legacyTeams.length === 0 ? (
+          <p className="muted">No legacy teams yet.</p>
+        ) : (
+          <ul>
+            {legacyTeams.map((t) => (
+              <li key={t.id}>{t.name}</li>
+            ))}
+          </ul>
+        )}
+        <AddLegacyTeamForm token={token} onAdded={refresh} />
+      </section>
+
+      <section className="card">
         <h2>Legacy Pool ({legacyPlayers.length})</h2>
         <p className="muted">
           Teams request to sign from this pool — each team may sign at most one legacy player per transfer window.
@@ -178,7 +201,7 @@ export function AdminTeamsPage() {
               {legacyPlayers.map((p) => (
                 <tr key={p.id}>
                   <td>{p.name}</td>
-                  <td>{p.legacyClubName ?? '—'}</td>
+                  <td>{p.legacyTeam?.name ?? '—'}</td>
                   <td>{LEGACY_REASONS.find((r) => r.value === p.legacyReason)?.label ?? p.legacyReason ?? '—'}</td>
                   <td>{p.currentTeam ? `Signed — ${p.currentTeam.name}` : 'Available'}</td>
                 </tr>
@@ -186,7 +209,7 @@ export function AdminTeamsPage() {
             </tbody>
           </table>
         )}
-        <AddLegacyPlayerForm token={token} onAdded={refresh} />
+        <AddLegacyPlayerForm legacyTeams={legacyTeams} token={token} onAdded={refresh} />
       </section>
 
       <section className="card">
@@ -221,22 +244,65 @@ export function AdminTeamsPage() {
   );
 }
 
-function AddLegacyPlayerForm({ token, onAdded }: { token: string | null; onAdded: () => void }) {
+function AddLegacyTeamForm({ token, onAdded }: { token: string | null; onAdded: () => void }) {
   const [name, setName] = useState('');
-  const [clubName, setClubName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await api.post('/legacy-teams', { name: name.trim() }, token);
+      setName('');
+      onAdded();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to add legacy team');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="inline-form" style={{ marginTop: '1rem' }}>
+      <label>
+        Legacy team name
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <button type="submit" disabled={!name.trim() || submitting}>
+        {submitting ? 'Adding…' : 'Add legacy team'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </form>
+  );
+}
+
+function AddLegacyPlayerForm({
+  legacyTeams,
+  token,
+  onAdded,
+}: {
+  legacyTeams: LegacyTeam[];
+  token: string | null;
+  onAdded: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [legacyTeamId, setLegacyTeamId] = useState('');
   const [legacyReason, setLegacyReason] = useState<LegacyReason | ''>('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !clubName.trim() || !legacyReason) return;
+    if (!name.trim() || !legacyTeamId || !legacyReason) return;
     setError(null);
     setSubmitting(true);
     try {
-      await api.post('/players/legacy', { name: name.trim(), clubName: clubName.trim(), legacyReason }, token);
+      await api.post('/players/legacy', { name: name.trim(), legacyTeamId, legacyReason }, token);
       setName('');
-      setClubName('');
+      setLegacyTeamId('');
       setLegacyReason('');
       onAdded();
     } catch (err) {
@@ -253,8 +319,15 @@ function AddLegacyPlayerForm({ token, onAdded }: { token: string | null; onAdded
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
       </label>
       <label>
-        Club name
-        <input type="text" value={clubName} onChange={(e) => setClubName(e.target.value)} />
+        Legacy team
+        <select value={legacyTeamId} onChange={(e) => setLegacyTeamId(e.target.value)} disabled={legacyTeams.length === 0}>
+          <option value="">{legacyTeams.length === 0 ? 'Add a legacy team first' : 'Select a legacy team…'}</option>
+          {legacyTeams.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
       </label>
       <label>
         Reason
@@ -267,7 +340,7 @@ function AddLegacyPlayerForm({ token, onAdded }: { token: string | null; onAdded
           ))}
         </select>
       </label>
-      <button type="submit" disabled={!name.trim() || !clubName.trim() || !legacyReason || submitting}>
+      <button type="submit" disabled={!name.trim() || !legacyTeamId || !legacyReason || submitting}>
         {submitting ? 'Adding…' : 'Add to pool'}
       </button>
       {error && <p className="error">{error}</p>}

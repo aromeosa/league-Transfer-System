@@ -4,6 +4,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import {
   LegacyReason,
+  LegacyTeam,
   Player,
   PlayerOrigin,
   PlayerPosition,
@@ -37,7 +38,7 @@ export class PlayersService {
         ...(status ? { status } : {}),
         ...(unattached ? { currentTeam: IsNull() } : {}),
       },
-      relations: ['currentTeam'],
+      relations: ['currentTeam', 'legacyTeam'],
       order: { name: 'ASC' },
     });
   }
@@ -129,15 +130,23 @@ export class PlayersService {
    * path, this one starts fully unattached (no team) so any team can browse the pool
    * and request to sign one. The one-legacy-signing-per-team-per-window cap is enforced
    * where every other request-type cap is, in TransferRequestsService.submit().
+   *
+   * legacyTeamId must reference an existing LegacyTeam — the actual enforcement behind
+   * "a legacy player's club must be in the list of legacy teams" (§ legacy pool
+   * validation); there's no free-text club name anymore.
    */
   async addLegacyPlayer(
     name: string,
-    clubName: string,
+    legacyTeamId: string,
     legacyReason: LegacyReason,
     actingUser: AuthenticatedUser,
   ): Promise<Player> {
     if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
       throw new ForbiddenException('Only a League Admin may add a legacy player');
+    }
+    const legacyTeam = await this.dataSource.getRepository(LegacyTeam).findOne({ where: { id: legacyTeamId } });
+    if (!legacyTeam) {
+      throw new BadRequestException('That legacy team does not exist — add it to the legacy teams list first');
     }
     return this.playerRepo.save(
       this.playerRepo.create({
@@ -145,7 +154,7 @@ export class PlayersService {
         status: PlayerStatus.LEGACY,
         originType: PlayerOrigin.DIRECT_REGISTRATION,
         legacyReason,
-        legacyClubName: clubName,
+        legacyTeam,
         transferCount: 0,
       }),
     );

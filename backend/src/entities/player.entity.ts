@@ -3,6 +3,7 @@ import { Exclude, Expose } from 'class-transformer';
 import { LegacyReason, PlayerOrigin, PlayerPosition, PlayerStatus } from './enums';
 import { Team } from './team.entity';
 import { UserAccount } from './user-account.entity';
+import { LegacyTeam } from './legacy-team.entity';
 import { DecimalTransformer } from './decimal.transformer';
 
 @Entity('players')
@@ -30,10 +31,12 @@ export class Player {
   @Column({ name: 'legacy_reason', type: 'enum', enum: LegacyReason, nullable: true })
   legacyReason?: LegacyReason | null;
 
-  /** The club a Legacy Player originally qualified/is associated with — shown in the
-   * Legacy Pool so teams can see provenance before requesting to sign one. */
-  @Column({ name: 'legacy_club_name', type: 'varchar', nullable: true })
-  legacyClubName?: string | null;
+  /** The legacy club a Legacy Player is associated with — must come from the curated
+   * LegacyTeam list (§ legacy pool validation), shown in the Legacy Pool so teams can
+   * browse by club before requesting to sign one. */
+  @ManyToOne(() => LegacyTeam, { nullable: true })
+  @JoinColumn({ name: 'legacy_team_id' })
+  legacyTeam?: LegacyTeam | null;
 
   /** GK/DF/MD/ST — collected at Free Agent self-signup; nullable for players registered another way. */
   @Column({ type: 'enum', enum: PlayerPosition, nullable: true })

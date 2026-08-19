@@ -1,4 +1,4 @@
-import { IsEnum, IsString, MinLength } from 'class-validator';
+import { IsEnum, IsString, IsUUID, MinLength } from 'class-validator';
 import { LegacyReason } from '../../entities';
 
 export class CreateLegacyPlayerDto {
@@ -6,10 +6,9 @@ export class CreateLegacyPlayerDto {
   @MinLength(1)
   name: string;
 
-  /** The club this Legacy Player originally qualified/is associated with. */
-  @IsString()
-  @MinLength(1)
-  clubName: string;
+  /** Must reference an existing LegacyTeam (POST /legacy-teams) — no free-text club name. */
+  @IsUUID()
+  legacyTeamId: string;
 
   @IsEnum(LegacyReason)
   legacyReason: LegacyReason;

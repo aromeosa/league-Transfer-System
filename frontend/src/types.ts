@@ -28,13 +28,19 @@ export interface CurrentUser {
   playerId: string | null;
 }
 
+export interface LegacyTeam {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface Player {
   id: string;
   name: string;
   status: PlayerStatus;
   originType: 'FREE_AGENT_ORIGIN' | 'DIRECT_REGISTRATION';
   legacyReason?: LegacyReason | null;
-  legacyClubName?: string | null;
+  legacyTeam?: LegacyTeam | null;
   position?: PlayerPosition | null;
   transferValue?: number | null;
   transferCount: number;

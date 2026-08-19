@@ -54,7 +54,7 @@ export class PlayersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LEAGUE_ADMIN)
   addLegacyPlayer(@Body() dto: CreateLegacyPlayerDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.playersService.addLegacyPlayer(dto.name, dto.clubName, dto.legacyReason, user);
+    return this.playersService.addLegacyPlayer(dto.name, dto.legacyTeamId, dto.legacyReason, user);
   }
 
   @Patch(':id/value')
