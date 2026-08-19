@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { Player, Team, TransferRequest, TransferWindow } from '../types';
+import type { DeregistrationReason, Player, PlayerDeregistrationRequest, Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge';
 import { StatTile } from '../components/StatTile';
@@ -13,6 +13,7 @@ export function LeagueAdminDashboard() {
   const { user, token, logout } = useAuth();
   const [window_, setWindow] = useState<TransferWindow | null>(null);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
+  const [deregistrations, setDeregistrations] = useState<PlayerDeregistrationRequest[]>([]);
   const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
   const [activeTeamCount, setActiveTeamCount] = useState(0);
   const [playerCount, setPlayerCount] = useState(0);
@@ -24,16 +25,19 @@ export function LeagueAdminDashboard() {
     let cancelled = false;
     async function load() {
       try {
-        const [windowRes, requestsRes, pendingTeamsRes, activeTeamsRes, playersRes] = await Promise.all([
-          api.get<TransferWindow | null>('/transfer-windows/current', token),
-          api.get<TransferRequest[]>('/transfer-requests', token),
-          api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
-          api.get<Team[]>('/teams?status=ACTIVE', token),
-          api.get<Player[]>('/players', token),
-        ]);
+        const [windowRes, requestsRes, deregistrationsRes, pendingTeamsRes, activeTeamsRes, playersRes] =
+          await Promise.all([
+            api.get<TransferWindow | null>('/transfer-windows/current', token),
+            api.get<TransferRequest[]>('/transfer-requests', token),
+            api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+            api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
+            api.get<Team[]>('/teams?status=ACTIVE', token),
+            api.get<Player[]>('/players', token),
+          ]);
         if (cancelled) return;
         setWindow(windowRes);
         setRequests(requestsRes);
+        setDeregistrations(deregistrationsRes);
         setPendingTeams(pendingTeamsRes);
         setActiveTeamCount(activeTeamsRes.length);
         setPlayerCount(playersRes.length);
@@ -48,6 +52,7 @@ export function LeagueAdminDashboard() {
   }, [token, refreshKey]);
 
   const pendingLeague = requests.filter((r) => r.status === 'PENDING_LEAGUE_APPROVAL');
+  const pendingDeregistrations = deregistrations.filter((d) => d.status === 'PENDING_LEAGUE_APPROVAL');
 
   return (
     <DashboardShell
@@ -66,6 +71,7 @@ export function LeagueAdminDashboard() {
         <StatTile icon={<UsersIcon />} label="Active teams" value={activeTeamCount} />
         <StatTile icon={<UserCogIcon />} label="Pending approvals" value={pendingTeams.length} />
         <StatTile icon={<TransferIcon />} label="Awaiting League decision" value={pendingLeague.length} />
+        <StatTile icon={<UsersIcon />} label="Pending deregistrations" value={pendingDeregistrations.length} />
         <StatTile icon={<TableIcon />} label="Total players" value={playerCount} />
       </div>
 
@@ -92,6 +98,17 @@ export function LeagueAdminDashboard() {
           <p className="muted">Nothing pending.</p>
         ) : (
           pendingLeague.map((r) => <LeagueDecisionRow key={r.id} request={r} token={token} onDecided={refresh} />)
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Pending player deregistrations</h2>
+        {pendingDeregistrations.length === 0 ? (
+          <p className="muted">Nothing pending.</p>
+        ) : (
+          pendingDeregistrations.map((d) => (
+            <DeregistrationDecisionRow key={d.id} request={d} token={token} onDecided={refresh} />
+          ))
         )}
       </section>
 
@@ -211,6 +228,52 @@ function LeagueDecisionRow({
         <strong>{request.requestingTeam.name}</strong> ← <strong>{request.player.name}</strong> (
         {request.releasingTeam?.name ?? 'Free Agent'}) for R{request.agreedFee}
         {request.squadFloorFlag && <span className="badge badge-bad"> squad floor breach</span>}
+      </span>
+      <span>
+        <button disabled={busy} onClick={() => decide('APPROVE')}>
+          Approve
+        </button>
+        <button disabled={busy} onClick={() => decide('REJECT')}>
+          Reject
+        </button>
+      </span>
+    </div>
+  );
+}
+
+const DEREGISTRATION_REASON_LABEL: Record<DeregistrationReason, string> = {
+  BAD_BEHAVIOUR: 'Bad behaviour',
+  MUTUAL_AGREEMENT: 'Mutual agreement',
+};
+
+/** The reason is shown up front, before Approve/Reject — this is the actual
+ * authorization gate: the player only leaves the roster once approved here. */
+function DeregistrationDecisionRow({
+  request,
+  token,
+  onDecided,
+}: {
+  request: PlayerDeregistrationRequest;
+  token: string | null;
+  onDecided: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function decide(decision: 'APPROVE' | 'REJECT') {
+    setBusy(true);
+    try {
+      await api.post(`/player-deregistrations/${request.id}/decision`, { decision }, token);
+      onDecided();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="request-row">
+      <span>
+        <strong>{request.team.name}</strong> wants to deregister <strong>{request.player.name}</strong> —{' '}
+        <span className="badge badge-pending">{DEREGISTRATION_REASON_LABEL[request.reason]}</span>
       </span>
       <span>
         <button disabled={busy} onClick={() => decide('APPROVE')}>

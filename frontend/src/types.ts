@@ -73,6 +73,21 @@ export interface TransferRequest {
   payment?: Payment | null;
 }
 
+export type DeregistrationReason = 'BAD_BEHAVIOUR' | 'MUTUAL_AGREEMENT';
+export type DeregistrationStatus = 'PENDING_LEAGUE_APPROVAL' | 'APPROVED' | 'REJECTED';
+
+export interface PlayerDeregistrationRequest {
+  id: string;
+  player: Player;
+  team: Team;
+  reason: DeregistrationReason;
+  requestedByUser: { id: string; name: string; email: string };
+  status: DeregistrationStatus;
+  decisionNotes?: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
 export interface Payment {
   id: string;
   totalFee: number;
