@@ -133,6 +133,7 @@ export function TeamOwnerDashboard() {
               <th>Origin</th>
               <th>Value</th>
               <th>Transfers used</th>
+              <th>ID verified</th>
             </tr>
           </thead>
           <tbody>
@@ -153,6 +154,7 @@ export function TeamOwnerDashboard() {
                   />
                 </td>
                 <td>{p.transferCount}</td>
+                <td>{p.idVerified ? <span className="badge badge-good">✓</span> : <span className="muted">—</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -513,6 +515,7 @@ function AddPlayerForm({
 }) {
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
+  const [idNumber, setIdNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -525,9 +528,18 @@ function AddPlayerForm({
     setError(null);
     setSubmitting(true);
     try {
-      await api.post('/players', { name: name.trim(), ...(value ? { transferValue: Number(value) } : {}) }, token);
+      await api.post(
+        '/players',
+        {
+          name: name.trim(),
+          ...(value ? { transferValue: Number(value) } : {}),
+          ...(idNumber.trim() ? { idNumber: idNumber.trim() } : {}),
+        },
+        token,
+      );
       setName('');
       setValue('');
+      setIdNumber('');
       onAdded();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to add player');
@@ -567,10 +579,22 @@ function AddPlayerForm({
             placeholder="Optional"
           />
         </label>
+        <label>
+          ID/passport number (optional)
+          <input
+            type="text"
+            value={idNumber}
+            onChange={(e) => setIdNumber(e.target.value)}
+            disabled={disabled}
+            minLength={4}
+            placeholder="Optional"
+          />
+        </label>
         <button type="submit" disabled={disabled || !name.trim() || submitting}>
           {submitting ? 'Adding…' : 'Add player'}
         </button>
       </form>
+      <p className="muted">Used only to confirm this isn't a duplicate registration — never shown to anyone.</p>
       {error && <p className="error">{error}</p>}
     </section>
   );

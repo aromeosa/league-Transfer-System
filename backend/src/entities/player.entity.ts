@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { LegacyReason, PlayerOrigin, PlayerPosition, PlayerStatus } from './enums';
 import { Team } from './team.entity';
 import { UserAccount } from './user-account.entity';
@@ -55,6 +56,21 @@ export class Player {
   /** Inverse side — the owning FK (`player_id`) lives on UserAccount. Free Agents only. */
   @OneToOne(() => UserAccount, (account) => account.player)
   account?: UserAccount | null;
+
+  /**
+   * One-way HMAC of a national ID/passport number (never the raw value — see
+   * id-number.util.ts) — anti-fraud duplicate-identity check only. The unique
+   * constraint is the actual enforcement; nobody, including a League Admin, can ever
+   * recover the original number from this. Multiple NULLs are allowed (most existing
+   * players have none on file).
+   */
+  @Exclude()
+  @Column({ name: 'id_number_hash', type: 'varchar', length: 64, nullable: true, unique: true })
+  idNumberHash?: string | null;
+
+  get idVerified(): boolean {
+    return !!this.idNumberHash;
+  }
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

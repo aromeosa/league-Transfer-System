@@ -14,10 +14,11 @@ const VALUE_MAX = 20;
 interface PlayerRow {
   name: string;
   value: string;
+  idNumber: string;
 }
 
 function emptyRoster(): PlayerRow[] {
-  return Array.from({ length: MIN_PLAYERS }, () => ({ name: '', value: '' }));
+  return Array.from({ length: MIN_PLAYERS }, () => ({ name: '', value: '', idNumber: '' }));
 }
 
 /**
@@ -45,7 +46,7 @@ export function TeamRegistrationForm({
   const [submitting, setSubmitting] = useState(false);
 
   function addPlayer() {
-    setPlayers((rows) => (rows.length >= MAX_PLAYERS ? rows : [...rows, { name: '', value: '' }]));
+    setPlayers((rows) => (rows.length >= MAX_PLAYERS ? rows : [...rows, { name: '', value: '', idNumber: '' }]));
   }
 
   function removePlayer(index: number) {
@@ -68,7 +69,11 @@ export function TeamRegistrationForm({
           owner: { name: ownerName, email: ownerEmail, password: ownerPassword },
           players: players
             .filter((p) => p.name.trim())
-            .map((p) => ({ name: p.name, transferValue: p.value ? Number(p.value) : undefined })),
+            .map((p) => ({
+              name: p.name,
+              transferValue: p.value ? Number(p.value) : undefined,
+              idNumber: p.idNumber.trim() || undefined,
+            })),
         },
         token,
       );
@@ -116,7 +121,8 @@ export function TeamRegistrationForm({
           </legend>
           <p className="muted">
             Set each player's transfer value (R{VALUE_MIN}&ndash;R{VALUE_MAX}). Once your team is active, values can
-            only be changed while a transfer window is open.
+            only be changed while a transfer window is open. ID/passport number is optional — used only to confirm
+            a player isn't already registered under another name; never shown to anyone, not even a League Admin.
           </p>
           {players.map((row, i) => (
             <div className="player-row" key={i}>
@@ -135,6 +141,13 @@ export function TeamRegistrationForm({
                 max={VALUE_MAX}
                 onChange={(e) => updatePlayer(i, 'value', e.target.value)}
                 required
+              />
+              <input
+                className="player-value-input"
+                value={row.idNumber}
+                placeholder="ID/passport (optional)"
+                minLength={4}
+                onChange={(e) => updatePlayer(i, 'idNumber', e.target.value)}
               />
               <button
                 type="button"

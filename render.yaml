@@ -60,6 +60,11 @@ services:
       # "sandbox" for PayFast's test environment, anything else (or unset) for live.
       - key: PAYFAST_MODE
         value: live
+      # Secret pepper for hashing player ID/passport numbers (see players/id-number.util.ts)
+      # — never stored alongside the hash, so a DB-only breach can't be used to brute-force
+      # it back. Render auto-generates and keeps this; no manual setup needed.
+      - key: ID_NUMBER_HASH_PEPPER
+        generateValue: true
 
 databases:
   - name: 5quadleague-db

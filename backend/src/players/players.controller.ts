@@ -35,7 +35,7 @@ export class PlayersController {
   /** Public self-signup — no auth, visible in the pool immediately (no approval workflow). */
   @Post('free-agents')
   registerFreeAgent(@Body() dto: RegisterFreeAgentDto) {
-    return this.playersService.registerFreeAgent(dto.name, dto.position, dto.email, dto.password);
+    return this.playersService.registerFreeAgent(dto.name, dto.position, dto.email, dto.password, dto.idNumber);
   }
 
   /** "Add player" — a brand-new player joins the owner's own roster directly, separate
@@ -44,7 +44,7 @@ export class PlayersController {
   @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
   @Roles(UserRole.TEAM_OWNER)
   addPlayer(@Body() dto: CreatePlayerDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.playersService.addPlayer(dto.name, dto.transferValue, user);
+    return this.playersService.addPlayer(dto.name, dto.transferValue, dto.idNumber, user);
   }
 
   @Patch(':id/value')

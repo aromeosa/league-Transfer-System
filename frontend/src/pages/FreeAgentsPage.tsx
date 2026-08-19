@@ -24,6 +24,7 @@ export function FreeAgentsPage() {
   const [position, setPosition] = useState<PlayerPosition | ''>('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [idNumber, setIdNumber] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -49,11 +50,18 @@ export function FreeAgentsPage() {
     setFormError(null);
     setSubmitting(true);
     try {
-      await api.post('/players/free-agents', { name, position, email, password });
+      await api.post('/players/free-agents', {
+        name,
+        position,
+        email,
+        password,
+        ...(idNumber ? { idNumber } : {}),
+      });
       setName('');
       setPosition('');
       setEmail('');
       setPassword('');
+      setIdNumber('');
       setSubmitted(true);
       setRefreshKey((k) => k + 1);
     } catch (err) {
@@ -112,6 +120,14 @@ export function FreeAgentsPage() {
               required
             />
           </label>
+          <label>
+            ID/passport number (optional)
+            <input value={idNumber} onChange={(e) => setIdNumber(e.target.value)} minLength={4} />
+          </label>
+          <p className="muted">
+            Used only to confirm you're not already registered under another name — never shown to anyone, not even
+            a League Admin.
+          </p>
           <button type="submit" disabled={submitting}>
             {submitting ? 'Signing up…' : 'Sign up'}
           </button>

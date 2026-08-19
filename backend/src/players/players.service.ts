@@ -7,6 +7,7 @@ import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { isUniqueViolation } from '../common/db-errors.util';
 import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
 import { BusinessRules } from '../config/business-rules.config';
+import { hashIdNumber } from './id-number.util';
 
 @Injectable()
 export class PlayersService {
@@ -55,7 +56,12 @@ export class PlayersService {
    * involved. Window-gated and roster-capped the same way every other
    * roster-composition change is.
    */
-  async addPlayer(name: string, transferValue: number | undefined, actingUser: AuthenticatedUser): Promise<Player> {
+  async addPlayer(
+    name: string,
+    transferValue: number | undefined,
+    idNumber: string | undefined,
+    actingUser: AuthenticatedUser,
+  ): Promise<Player> {
     if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
       throw new ForbiddenException('Only a team owner may add a player to their roster');
     }
@@ -66,33 +72,41 @@ export class PlayersService {
       throw new ForbiddenException('Players can only be added while a transfer window is open');
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const rosterSize = await manager.count(Player, { where: { currentTeam: { id: teamId } } });
-      if (rosterSize + 1 > BusinessRules.ROSTER_MAX) {
-        throw new BadRequestException(`Your roster would exceed the ${BusinessRules.ROSTER_MAX}-player maximum`);
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const rosterSize = await manager.count(Player, { where: { currentTeam: { id: teamId } } });
+        if (rosterSize + 1 > BusinessRules.ROSTER_MAX) {
+          throw new BadRequestException(`Your roster would exceed the ${BusinessRules.ROSTER_MAX}-player maximum`);
+        }
+
+        const player = await manager.save(
+          Player,
+          manager.create(Player, {
+            name,
+            currentTeam: { id: teamId } as Team,
+            status: PlayerStatus.REGISTERED,
+            // Unlike the initial team-registration bootstrap roster (DIRECT_REGISTRATION),
+            // a player added this way is treated as having come from the free agent pool.
+            originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+            transferValue: transferValue ?? null,
+            transferCount: 0,
+            idNumberHash: idNumber ? hashIdNumber(idNumber) : null,
+          }),
+        );
+
+        await manager.save(
+          RosterHistory,
+          manager.create(RosterHistory, { player, team: { id: teamId } as Team, joinedAt: new Date() }),
+        );
+
+        return player;
+      });
+    } catch (err) {
+      if (isUniqueViolation(err, 'id_number_hash')) {
+        throw new ConflictException('This ID/passport number is already registered to another player');
       }
-
-      const player = await manager.save(
-        Player,
-        manager.create(Player, {
-          name,
-          currentTeam: { id: teamId } as Team,
-          status: PlayerStatus.REGISTERED,
-          // Unlike the initial team-registration bootstrap roster (DIRECT_REGISTRATION),
-          // a player added this way is treated as having come from the free agent pool.
-          originType: PlayerOrigin.FREE_AGENT_ORIGIN,
-          transferValue: transferValue ?? null,
-          transferCount: 0,
-        }),
-      );
-
-      await manager.save(
-        RosterHistory,
-        manager.create(RosterHistory, { player, team: { id: teamId } as Team, joinedAt: new Date() }),
-      );
-
-      return player;
-    });
+      throw err;
+    }
   }
 
   /** Public directory of current Free Agents — used by the Teams and Free Agents pages. */
@@ -105,7 +119,13 @@ export class PlayersService {
    * immediately), but the account created here is what lets this Free Agent later log
    * in and accept/reject a team's signing offer themselves (see TransferRequestsService).
    */
-  async registerFreeAgent(name: string, position: PlayerPosition, email: string, password: string): Promise<Player> {
+  async registerFreeAgent(
+    name: string,
+    position: PlayerPosition,
+    email: string,
+    password: string,
+    idNumber?: string,
+  ): Promise<Player> {
     // Checked up front for a friendly error in the common case; the catch below is the
     // real guarantee — it closes the race where two signups with the same email both
     // pass this check before either commits (see TeamsService.createTeamRecord for the
@@ -124,6 +144,7 @@ export class PlayersService {
             position,
             status: PlayerStatus.FREE_AGENT,
             originType: PlayerOrigin.FREE_AGENT_ORIGIN,
+            idNumberHash: idNumber ? hashIdNumber(idNumber) : null,
           }),
         );
 
@@ -144,6 +165,9 @@ export class PlayersService {
     } catch (err) {
       if (isUniqueViolation(err, 'email')) {
         throw new ConflictException('A user with this email already exists');
+      }
+      if (isUniqueViolation(err, 'id_number_hash')) {
+        throw new ConflictException('This ID/passport number is already registered to another player');
       }
       throw err;
     }
