@@ -2,9 +2,17 @@ import type { Player } from '../types';
 import { PlayerNameCell } from './PlayerNameCell';
 import { CollapsibleList } from './CollapsibleList';
 
-export function FreeAgentsTable({ players, label = 'Free Agents' }: { players: Player[]; label?: string }) {
+export function FreeAgentsTable({
+  players,
+  label = 'Free Agents',
+  defaultOpen = false,
+}: {
+  players: Player[];
+  label?: string;
+  defaultOpen?: boolean;
+}) {
   return (
-    <CollapsibleList label={label} items={players} getName={(p) => p.name}>
+    <CollapsibleList label={label} items={players} getName={(p) => p.name} defaultOpen={defaultOpen}>
       {(filtered) => (
         <table>
           <thead>

@@ -797,6 +797,14 @@ button + button {
   margin-bottom: 0.75rem;
 }
 
+.collapsible-list-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
 /* ---------- Request rows / banners / badges ---------- */
 
 .request-row {
