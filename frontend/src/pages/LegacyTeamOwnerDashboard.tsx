@@ -5,7 +5,8 @@ import type { TransferRequest } from '../types';
 import { StatTile } from '../components/StatTile';
 import { RequestTable } from '../components/RequestTable';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TransferIcon } from '../components/icons';
+import { LEGACY_TEAM_OWNER_NAV } from '../layout/nav';
+import { TransferIcon } from '../components/icons';
 
 export function LegacyTeamOwnerDashboard() {
   const { user, token, logout } = useAuth();
@@ -31,7 +32,7 @@ export function LegacyTeamOwnerDashboard() {
 
   const pendingRequests = useMemo(() => requests.filter((r) => r.status === 'PENDING_LEGACY_TEAM_APPROVAL'), [requests]);
 
-  const navItems = [{ label: 'Dashboard', path: '/legacy-team', icon: <HomeIcon /> }];
+  const navItems = LEGACY_TEAM_OWNER_NAV;
 
   return (
     <DashboardShell

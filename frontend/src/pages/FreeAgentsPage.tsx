@@ -4,17 +4,9 @@ import type { Player } from '../types';
 import { StatTile } from '../components/StatTile';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TableIcon, UserIcon, UsersIcon } from '../components/icons';
+import { UsersIcon } from '../components/icons';
+import { getNavForUser } from '../layout/nav';
 import { useAuth } from '../auth/AuthContext';
-
-export function getFreeAgentPublicNav(loggedIn: boolean) {
-  return [
-    ...(loggedIn ? [{ label: 'Dashboard', path: '/free-agent', icon: <HomeIcon /> }] : []),
-    { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
-    ...(loggedIn ? [] : [{ label: 'Sign up', path: '/register-free-agent', icon: <UserIcon /> }]),
-    { label: 'View Teams', path: '/teams', icon: <TableIcon /> },
-  ];
-}
 
 export function FreeAgentsPage() {
   const { user, logout } = useAuth();
@@ -39,7 +31,7 @@ export function FreeAgentsPage() {
   return (
     <DashboardShell
       title="Free Agents"
-      navItems={getFreeAgentPublicNav(!!user)}
+      navItems={getNavForUser(user)}
       userName={user?.name}
       onLogout={user ? logout : undefined}
     >

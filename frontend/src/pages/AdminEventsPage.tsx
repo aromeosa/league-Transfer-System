@@ -3,13 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { DeregistrationReason, Player, PlayerDeregistrationRequest, RequestStatus, TransferRequest } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TableIcon, ClockIcon } from '../components/icons';
-
-const ADMIN_NAV = [
-  { label: 'Dashboard', path: '/admin', icon: <HomeIcon /> },
-  { label: 'Teams & Rosters', path: '/admin/teams', icon: <TableIcon /> },
-  { label: 'All Events', path: '/admin/events', icon: <ClockIcon /> },
-];
+import { ADMIN_NAV } from '../layout/nav';
 
 const DECISION_LABEL: Partial<Record<RequestStatus, string>> = {
   APPROVED: 'Transfer approved',

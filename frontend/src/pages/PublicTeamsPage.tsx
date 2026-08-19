@@ -7,7 +7,7 @@ import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 import { TableIcon, UsersIcon } from '../components/icons';
 import { DashboardShell } from '../layout/DashboardShell';
-import { getFreeAgentPublicNav } from './FreeAgentsPage';
+import { getNavForUser } from '../layout/nav';
 
 const ROSTER_MAX = 15;
 
@@ -39,7 +39,7 @@ export function PublicTeamsPage() {
   return (
     <DashboardShell
       title="Teams"
-      navItems={getFreeAgentPublicNav(!!user)}
+      navItems={getNavForUser(user)}
       userName={user?.name}
       onLogout={user ? logout : undefined}
     >
