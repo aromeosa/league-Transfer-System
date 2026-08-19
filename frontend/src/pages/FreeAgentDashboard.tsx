@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { TransferRequest } from '../types';
+import type { Player, TransferRequest } from '../types';
 import { StatTile } from '../components/StatTile';
 import { RequestTable } from '../components/RequestTable';
+import { PlayerAvatar } from '../components/PlayerAvatar';
 import { DashboardShell } from '../layout/DashboardShell';
-import { HomeIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { CameraIcon, HomeIcon, TransferIcon, UsersIcon } from '../components/icons';
+import { resizeImageToDataUrl } from '../utils/resizeImage';
 
 export function FreeAgentDashboard() {
   const { user, token, logout } = useAuth();
+  const [player, setPlayer] = useState<Player | null>(null);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -16,13 +20,14 @@ export function FreeAgentDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .get<TransferRequest[]>('/transfer-requests', token)
-      .then((res) => {
-        if (!cancelled) setRequests(res);
+    Promise.all([api.get<Player>('/players/me', token), api.get<TransferRequest[]>('/transfer-requests', token)])
+      .then(([playerRes, requestsRes]) => {
+        if (cancelled) return;
+        setPlayer(playerRes);
+        setRequests(requestsRes);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load your offers');
+        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load your dashboard');
       });
     return () => {
       cancelled = true;
@@ -46,6 +51,15 @@ export function FreeAgentDashboard() {
       </div>
 
       <section className="card">
+        <h2>My profile</h2>
+        {player ? (
+          <OwnProfilePhoto player={player} token={token} onUpdated={refresh} />
+        ) : (
+          <p className="muted">Loading…</p>
+        )}
+      </section>
+
+      <section className="card">
         <h2>Signing offers awaiting your decision</h2>
         {pendingOffers.length === 0 ? (
           <p className="muted">No teams have offered to sign you right now.</p>
@@ -55,10 +69,72 @@ export function FreeAgentDashboard() {
       </section>
 
       <section className="card">
-        <h2>All requests involving you</h2>
+        <h2>All requests involving your team</h2>
         <RequestTable requests={requests} />
       </section>
     </DashboardShell>
+  );
+}
+
+/** Free Agent self-service photo upload — same client-resize-then-upload pattern as a
+ * Team Owner uploading a photo for one of their own roster players, just scoped to the
+ * logged-in Free Agent's own profile instead. */
+function OwnProfilePhoto({
+  player,
+  token,
+  onUpdated,
+}: {
+  player: Player;
+  token: string | null;
+  onUpdated: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const photoDataUrl = await resizeImageToDataUrl(file);
+      await api.patch('/players/me/photo', { photoDataUrl }, token);
+      onUpdated();
+    } catch (err) {
+      setError(err instanceof ApiError || err instanceof Error ? err.message : 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <span className="player-name-cell">
+      <button
+        type="button"
+        className="player-avatar-wrap editable"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        aria-label="Upload your profile photo"
+        title="Upload a photo"
+      >
+        <PlayerAvatar avatarUrl={player.avatarUrl} />
+        <span className="player-avatar-badge">
+          <CameraIcon />
+        </span>
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      <span>
+        {player.name}
+        {error && (
+          <>
+            <br />
+            <span className="error">{error}</span>
+          </>
+        )}
+      </span>
+    </span>
   );
 }
 

@@ -66,6 +66,22 @@ export class PlayersController {
     return this.playersService.adminDeregisterLegacyPlayer(id, user);
   }
 
+  /** A Free Agent's own profile — works whether they're still unattached or signed. */
+  @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.FREE_AGENT)
+  findOwn(@CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.findOwn(user);
+  }
+
+  /** Free Agent uploads/replaces their own profile photo — self-service, no team involved. */
+  @Patch('me/photo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.FREE_AGENT)
+  updateOwnPhoto(@Body() dto: UpdatePlayerPhotoDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.updateOwnPhoto(dto.photoDataUrl, user);
+  }
+
   @Patch(':id/value')
   @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
   @Roles(UserRole.TEAM_OWNER)
