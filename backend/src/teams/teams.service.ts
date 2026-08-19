@@ -13,6 +13,7 @@ import {
   UserRole,
 } from '../entities';
 import { isUniqueViolation } from '../common/db-errors.util';
+import { hashIdNumber } from '../players/id-number.util';
 import { CreateTeamDto } from './dto/create-team.dto';
 
 @Injectable()
@@ -68,6 +69,7 @@ export class TeamsService {
             originType: PlayerOrigin.DIRECT_REGISTRATION,
             transferValue: p.transferValue ?? null,
             transferCount: 0,
+            idNumberHash: p.idNumber ? hashIdNumber(p.idNumber) : null,
           }),
         );
         const savedPlayers = await manager.save(Player, players);
@@ -83,6 +85,9 @@ export class TeamsService {
     } catch (err) {
       if (isUniqueViolation(err, 'email')) {
         throw new ConflictException('A user with this email already exists');
+      }
+      if (isUniqueViolation(err, 'id_number_hash')) {
+        throw new ConflictException('One of these ID/passport numbers is already registered to another player');
       }
       throw err;
     }

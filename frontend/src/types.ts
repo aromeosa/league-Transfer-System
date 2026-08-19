@@ -39,6 +39,8 @@ export interface Player {
   currentTeam?: Team | null;
   avatarUrl?: string | null;
   createdAt: string;
+  /** Whether an ID/passport number is on file (hashed) — the number itself is never exposed. */
+  idVerified: boolean;
 }
 
 export interface Team {

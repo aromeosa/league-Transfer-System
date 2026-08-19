@@ -94,6 +94,7 @@ export function AdminTeamsPage() {
                   <th>Status</th>
                   <th>Origin</th>
                   <th>Value</th>
+                  <th>ID verified</th>
                 </tr>
               </thead>
               <tbody>
@@ -106,6 +107,7 @@ export function AdminTeamsPage() {
                     <td>{player.status}</td>
                     <td>{player.originType}</td>
                     <td>{player.transferValue != null ? `R${player.transferValue}` : '—'}</td>
+                    <td>{player.idVerified ? <span className="badge badge-good">✓</span> : <span className="muted">—</span>}</td>
                   </tr>
                 ))}
               </tbody>
