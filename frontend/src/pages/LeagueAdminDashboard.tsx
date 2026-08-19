@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { DeregistrationReason, Player, PlayerDeregistrationRequest, Team, TransferRequest, TransferWindow } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge';
+import { PaymentTimeline } from '../components/PaymentTimeline';
 import { StatTile } from '../components/StatTile';
 import { TeamRegistrationForm } from '../components/TeamRegistrationForm';
 import { DashboardShell } from '../layout/DashboardShell';
@@ -20,6 +21,15 @@ export function LeagueAdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
+  const [expandedPaymentIds, setExpandedPaymentIds] = useState<Set<string>>(new Set());
+  function togglePaymentTimeline(id: string) {
+    setExpandedPaymentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -129,23 +139,37 @@ export function LeagueAdminDashboard() {
           </thead>
           <tbody>
             {requests.map((r) => (
-              <tr key={r.id}>
-                <td>{r.player.name}</td>
-                <td>{r.requestType}</td>
-                <td>{r.releasingTeam?.name ?? '—'}</td>
-                <td>{r.requestingTeam.name}</td>
-                <td>R{r.agreedFee}</td>
-                <td>
-                  <PaymentStatusBadge payment={r.payment} />
-                  {r.payment?.status === 'INITIATED' && (
-                    <ConfirmPaymentManuallyButton requestId={r.id} token={token} onConfirmed={refresh} />
-                  )}
-                </td>
-                <td>{r.squadFloorFlag ? <span className="badge badge-bad">flagged</span> : '—'}</td>
-                <td>
-                  <StatusBadge status={r.status} />
-                </td>
-              </tr>
+              <Fragment key={r.id}>
+                <tr>
+                  <td>{r.player.name}</td>
+                  <td>{r.requestType}</td>
+                  <td>{r.releasingTeam?.name ?? '—'}</td>
+                  <td>{r.requestingTeam.name}</td>
+                  <td>R{r.agreedFee}</td>
+                  <td>
+                    <PaymentStatusBadge payment={r.payment} />
+                    {r.payment?.status === 'INITIATED' && (
+                      <ConfirmPaymentManuallyButton requestId={r.id} token={token} onConfirmed={refresh} />
+                    )}
+                    {r.payment && (
+                      <button type="button" className="btn-small" onClick={() => togglePaymentTimeline(r.id)}>
+                        {expandedPaymentIds.has(r.id) ? 'Hide timeline' : 'Show timeline'}
+                      </button>
+                    )}
+                  </td>
+                  <td>{r.squadFloorFlag ? <span className="badge badge-bad">flagged</span> : '—'}</td>
+                  <td>
+                    <StatusBadge status={r.status} />
+                  </td>
+                </tr>
+                {expandedPaymentIds.has(r.id) && (
+                  <tr>
+                    <td colSpan={7}>
+                      <PaymentTimeline requestId={r.id} payment={r.payment} canManage token={token} onUpdated={refresh} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

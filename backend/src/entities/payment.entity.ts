@@ -57,4 +57,17 @@ export class Payment {
   /** Raw ITN body from the gateway, for audit/dispute purposes (PayFast only; null for the mock gateway). */
   @Column({ name: 'gateway_raw_payload', type: 'text', nullable: true })
   gatewayRawPayload?: string | null;
+
+  /**
+   * Everything lands in the league's own PayFast account (see payfast-gateway.service.ts
+   * — one merchant_id for every transaction, no per-club split payment). These two
+   * fields are the League Admin manually attesting that they've since forwarded the
+   * money on: first the club's 80% bundle, then — once the club's had it — the
+   * player's share within it. Neither ever happens automatically.
+   */
+  @Column({ name: 'club_paid_at', type: 'timestamptz', nullable: true })
+  clubPaidAt?: Date | null;
+
+  @Column({ name: 'player_paid_at', type: 'timestamptz', nullable: true })
+  playerPaidAt?: Date | null;
 }
