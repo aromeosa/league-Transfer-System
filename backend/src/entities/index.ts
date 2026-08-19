@@ -9,6 +9,7 @@ export * from './payment.entity';
 export * from './roster-history.entity';
 export * from './password-reset-token.entity';
 export * from './player-deregistration-request.entity';
+export * from './legacy-team.entity';
 
 import { Team } from './team.entity';
 import { UserAccount } from './user-account.entity';
@@ -20,6 +21,7 @@ import { Payment } from './payment.entity';
 import { RosterHistory } from './roster-history.entity';
 import { PasswordResetToken } from './password-reset-token.entity';
 import { PlayerDeregistrationRequest } from './player-deregistration-request.entity';
+import { LegacyTeam } from './legacy-team.entity';
 
 export const ALL_ENTITIES = [
   Team,
@@ -32,4 +34,5 @@ export const ALL_ENTITIES = [
   RosterHistory,
   PasswordResetToken,
   PlayerDeregistrationRequest,
+  LegacyTeam,
 ];
