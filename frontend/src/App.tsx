@@ -5,6 +5,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TeamRegisterPage } from './pages/TeamRegisterPage';
 import { PublicTeamsPage } from './pages/PublicTeamsPage';
 import { FreeAgentsPage } from './pages/FreeAgentsPage';
+import { FreeAgentRegisterPage } from './pages/FreeAgentRegisterPage';
 import { TeamOwnerDashboard } from './pages/TeamOwnerDashboard';
 import { FreeAgentDashboard } from './pages/FreeAgentDashboard';
 import { LegacyTeamOwnerDashboard } from './pages/LegacyTeamOwnerDashboard';
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/register" element={<TeamRegisterPage />} />
       <Route path="/teams" element={<PublicTeamsPage />} />
       <Route path="/free-agents" element={<FreeAgentsPage />} />
+      <Route path="/register-free-agent" element={<FreeAgentRegisterPage />} />
       <Route
         path="/team"
         element={
