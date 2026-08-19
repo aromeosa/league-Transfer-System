@@ -33,6 +33,7 @@ export enum PlayerPosition {
 export enum LegacyReason {
   QUALIFIED_MAIN_EVENT = 'QUALIFIED_MAIN_EVENT',
   ASSISTED_QUALIFICATION = 'ASSISTED_QUALIFICATION',
+  QUALIFIER_WINNER = 'QUALIFIER_WINNER',
 }
 
 export enum WindowStatus {

@@ -161,6 +161,40 @@ export class PlayersService {
   }
 
   /**
+   * League Admin direct release of a signed legacy player — unlike a regular player,
+   * who can only be deregistered via a team-submitted request that the League Admin
+   * then approves (PlayerDeregistrationsService), the admin already curates the whole
+   * Legacy Pool directly, so no separate approval step is needed here.
+   */
+  async adminDeregisterLegacyPlayer(playerId: string, actingUser: AuthenticatedUser): Promise<Player> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may deregister a legacy player directly');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const player = await manager.findOne(Player, { where: { id: playerId }, relations: ['currentTeam'] });
+      if (!player) {
+        throw new NotFoundException('Player not found');
+      }
+      if (player.status !== PlayerStatus.LEGACY) {
+        throw new BadRequestException('Only a legacy player can be deregistered this way');
+      }
+      if (!player.currentTeam) {
+        throw new ConflictException('This legacy player is not currently signed to a team');
+      }
+
+      const now = new Date();
+      await manager.update(
+        RosterHistory,
+        { player: { id: player.id }, team: { id: player.currentTeam.id }, leftAt: IsNull() },
+        { leftAt: now },
+      );
+      player.currentTeam = null;
+      return manager.save(Player, player);
+    });
+  }
+
+  /**
    * Public self-signup — no auth, no approval workflow to join the pool (visible
    * immediately), but the account created here is what lets this Free Agent later log
    * in and accept/reject a team's signing offer themselves (see TransferRequestsService).
