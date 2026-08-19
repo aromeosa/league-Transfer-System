@@ -187,10 +187,12 @@ function WindowControls({
   token: string | null;
   onChanged: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'open' | 'close' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function openForTesting() {
-    setBusy(true);
+  async function forceOpen() {
+    setBusy('open');
+    setError(null);
     try {
       const now = Date.now();
       await api.post(
@@ -202,14 +204,35 @@ function WindowControls({
         token,
       );
       onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to open a window');
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  }
+
+  async function forceClose() {
+    if (!window.confirm('Force-close the current transfer window? Any request still unresolved will be cancelled.')) {
+      return;
+    }
+    setBusy('close');
+    setError(null);
+    try {
+      await api.post('/transfer-windows/force-close', {}, token);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to close the window');
+    } finally {
+      setBusy(null);
     }
   }
 
   return (
     <section className="card">
       <h2>Transfer window</h2>
+      <p className="muted">
+        Opens automatically from the 1st to the 7th of every month. Use these to override that schedule at any time.
+      </p>
       {w ? (
         <p className={`banner ${w.status === 'OPEN' ? 'banner-good' : 'banner-bad'}`}>
           Status: <strong>{w.status}</strong> ({new Date(w.opensAt).toLocaleString()} –{' '}
@@ -218,9 +241,15 @@ function WindowControls({
       ) : (
         <p className="banner banner-bad">No window scheduled.</p>
       )}
-      <button disabled={busy} onClick={openForTesting}>
-        {busy ? 'Opening…' : 'Force-open a window now'}
-      </button>
+      <div>
+        <button disabled={busy !== null} onClick={forceOpen}>
+          {busy === 'open' ? 'Opening…' : 'Force-open a window now'}
+        </button>
+        <button disabled={busy !== null || w?.status !== 'OPEN'} onClick={forceClose}>
+          {busy === 'close' ? 'Closing…' : 'Force-close the current window'}
+        </button>
+      </div>
+      {error && <p className="error">{error}</p>}
     </section>
   );
 }
