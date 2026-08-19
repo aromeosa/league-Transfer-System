@@ -8,6 +8,7 @@ import { DashboardShell } from '../layout/DashboardShell';
 import { TEAM_OWNER_NAV } from '../layout/nav';
 import { CameraIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { TeamLogo } from '../components/TeamLogo';
 import { RequestTable } from '../components/RequestTable';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
 
@@ -105,6 +106,8 @@ export function TeamOwnerDashboard() {
     <DashboardShell title={`${team.name} — Team Owner`} userName={user?.name} onLogout={logout} navItems={navItems}>
       {error && <p className="error">{error}</p>}
 
+      <TeamLogoEditor team={team} token={token} onUpdated={refresh} />
+
       <div className="stat-tile-row">
         <StatTile icon={<UsersIcon />} label="Roster size" value={team.roster?.length ?? 0} />
         <StatTile icon={<TableIcon />} label="Squad value" value={`R${squadValue}`} />
@@ -191,6 +194,61 @@ export function TeamOwnerDashboard() {
         <RequestTable requests={requests} />
       </section>
     </DashboardShell>
+  );
+}
+
+/** Team Owner self-service logo upload — settable at registration, editable anytime. */
+function TeamLogoEditor({
+  team,
+  token,
+  onUpdated,
+}: {
+  team: Team;
+  token: string | null;
+  onUpdated: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const logoDataUrl = await resizeImageToDataUrl(file);
+      await api.patch('/teams/me/logo', { logoDataUrl }, token);
+      onUpdated();
+    } catch (err) {
+      setError(err instanceof ApiError || err instanceof Error ? err.message : 'Failed to upload logo');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="team-name-cell">
+      <button
+        type="button"
+        className="team-logo-wrap editable"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        aria-label="Upload your team logo"
+        title="Upload a logo"
+      >
+        <TeamLogo logoUrl={team.logoUrl} />
+        <span className="team-logo-badge">
+          <CameraIcon />
+        </span>
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      <span>
+        <h2 style={{ margin: 0 }}>{team.name}</h2>
+        {error && <span className="error">{error}</span>}
+      </span>
+    </div>
   );
 }
 

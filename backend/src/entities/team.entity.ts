@@ -14,6 +14,10 @@ export class Team {
   @Column({ type: 'enum', enum: TeamStatus, default: TeamStatus.PENDING_APPROVAL })
   status: TeamStatus;
 
+  /** Data URL (client resizes/re-encodes before upload) — no external file storage needed. */
+  @Column({ name: 'logo_url', type: 'text', nullable: true })
+  logoUrl?: string | null;
+
   /** Inverse side — the owning FK (`team_id`) lives on UserAccount, see §4.1. */
   @OneToOne(() => UserAccount, (owner) => owner.team)
   ownerAccount?: UserAccount;
