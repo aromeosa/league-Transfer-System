@@ -6,8 +6,8 @@ import type { LegacyReason, LegacyTeam, Player, Team, TransferWindow } from '../
 import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TransferIcon, UsersIcon } from '../components/icons';
 
-const VALUE_MIN = 10;
-const VALUE_MAX = 20;
+const VALUE_MIN = 500;
+const VALUE_MAX = 5000;
 const ROSTER_MAX = 15;
 
 const LEGACY_REASON_LABEL: Record<LegacyReason, string> = {

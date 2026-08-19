@@ -6,10 +6,8 @@ export const BusinessRules = {
   ROSTER_MIN: 5,
   ROSTER_MAX: 15,
 
-  // Deliberately tiny for live PayFast testing with real (but small) transactions —
-  // was R500-R5,000. Raise back once live-payment testing is done.
-  VALUATION_MIN: 10,
-  VALUATION_MAX: 20,
+  VALUATION_MIN: 500,
+  VALUATION_MAX: 5000,
 
   // Per team, per window — each capped independently (§1.4 #1/#12).
   WINDOW_CAP_FREE_AGENT_SIGNING: 2,
