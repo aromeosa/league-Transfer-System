@@ -36,7 +36,7 @@ export function LoginPage() {
       <ThemeToggleButton className="theme-toggle-corner" />
       <form className="card" onSubmit={handleSubmit}>
         <Logo className="auth-logo" />
-        <p className="muted">Transfer System — sign in as a Team Owner, Free Agent, or League Admin.</p>
+        <p className="muted">Transfer System — sign in as a Team Owner or Free Agent.</p>
 
         <label>
           Email
