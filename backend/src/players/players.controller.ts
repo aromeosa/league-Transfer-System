@@ -11,6 +11,7 @@ import { UpdatePlayerValueDto } from './dto/update-player-value.dto';
 import { UpdatePlayerPhotoDto } from './dto/update-player-photo.dto';
 import { RegisterFreeAgentDto } from './dto/register-free-agent.dto';
 import { CreatePlayerDto } from './dto/create-player.dto';
+import { CreateLegacyPlayerDto } from './dto/create-legacy-player.dto';
 
 /**
  * Guards are per-method rather than class-level (unlike siblings guarded wholesale)
@@ -45,6 +46,15 @@ export class PlayersController {
   @Roles(UserRole.TEAM_OWNER)
   addPlayer(@Body() dto: CreatePlayerDto, @CurrentUser() user: AuthenticatedUser) {
     return this.playersService.addPlayer(dto.name, dto.transferValue, dto.idNumber, user);
+  }
+
+  /** League Admin curates the Legacy Pool — the player starts unattached, available for
+   * any team to request to sign. */
+  @Post('legacy')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LEAGUE_ADMIN)
+  addLegacyPlayer(@Body() dto: CreateLegacyPlayerDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.addLegacyPlayer(dto.name, dto.clubName, dto.legacyReason, user);
   }
 
   @Patch(':id/value')

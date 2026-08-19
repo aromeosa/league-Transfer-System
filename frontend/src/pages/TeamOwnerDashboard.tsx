@@ -75,6 +75,7 @@ export function TeamOwnerDashboard() {
     { label: 'Dashboard', path: '/team', icon: <HomeIcon /> },
     { label: 'League Teams', path: '/teams', icon: <UsersIcon /> },
     { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
+    { label: 'Legacy Pool', path: '/legacy-pool', icon: <UsersIcon /> },
     { label: 'How Transfers Work', path: '/how-it-works', icon: <TransferIcon /> },
   ];
 

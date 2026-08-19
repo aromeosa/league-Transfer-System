@@ -2,7 +2,17 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Player, PlayerOrigin, PlayerPosition, PlayerStatus, RosterHistory, Team, UserAccount, UserRole } from '../entities';
+import {
+  LegacyReason,
+  Player,
+  PlayerOrigin,
+  PlayerPosition,
+  PlayerStatus,
+  RosterHistory,
+  Team,
+  UserAccount,
+  UserRole,
+} from '../entities';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { isUniqueViolation } from '../common/db-errors.util';
 import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
@@ -112,6 +122,33 @@ export class PlayersService {
   /** Public directory of current Free Agents — used by the Teams and Free Agents pages. */
   findFreeAgents(): Promise<Player[]> {
     return this.playerRepo.find({ where: { status: PlayerStatus.FREE_AGENT }, order: { name: 'ASC' } });
+  }
+
+  /**
+   * League Admin curates the Legacy Pool directly — unlike every other player-creation
+   * path, this one starts fully unattached (no team) so any team can browse the pool
+   * and request to sign one. The one-legacy-signing-per-team-per-window cap is enforced
+   * where every other request-type cap is, in TransferRequestsService.submit().
+   */
+  async addLegacyPlayer(
+    name: string,
+    clubName: string,
+    legacyReason: LegacyReason,
+    actingUser: AuthenticatedUser,
+  ): Promise<Player> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may add a legacy player');
+    }
+    return this.playerRepo.save(
+      this.playerRepo.create({
+        name,
+        status: PlayerStatus.LEGACY,
+        originType: PlayerOrigin.DIRECT_REGISTRATION,
+        legacyReason,
+        legacyClubName: clubName,
+        transferCount: 0,
+      }),
+    );
   }
 
   /**

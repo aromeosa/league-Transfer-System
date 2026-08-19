@@ -1,18 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { Player, Team } from '../types';
+import type { LegacyReason, Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { ClockIcon, HomeIcon, TableIcon } from '../components/icons';
 import { PlayerNameCell } from '../components/PlayerNameCell';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 
+const LEGACY_REASONS: { value: LegacyReason; label: string }[] = [
+  { value: 'QUALIFIED_MAIN_EVENT', label: 'Qualified — Main Event' },
+  { value: 'ASSISTED_QUALIFICATION', label: 'Assisted Qualification' },
+];
+
 export function AdminTeamsPage() {
   const { user, token, logout } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = () => setRefreshKey((k) => k + 1);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,13 +36,14 @@ export function AdminTeamsPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, refreshKey]);
 
   const rosterRows = useMemo(
     () => teams.flatMap((team) => (team.roster ?? []).map((player) => ({ player, teamName: team.name }))),
     [teams],
   );
   const freeAgents = useMemo(() => players.filter((p) => p.status === 'FREE_AGENT'), [players]);
+  const legacyPlayers = useMemo(() => players.filter((p) => p.status === 'LEGACY'), [players]);
 
   return (
     <DashboardShell
@@ -149,6 +158,38 @@ export function AdminTeamsPage() {
       </section>
 
       <section className="card">
+        <h2>Legacy Pool ({legacyPlayers.length})</h2>
+        <p className="muted">
+          Teams request to sign from this pool — each team may sign at most one legacy player per transfer window.
+        </p>
+        {legacyPlayers.length === 0 ? (
+          <p className="muted">No legacy players yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Club</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {legacyPlayers.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  <td>{p.legacyClubName ?? '—'}</td>
+                  <td>{LEGACY_REASONS.find((r) => r.value === p.legacyReason)?.label ?? p.legacyReason ?? '—'}</td>
+                  <td>{p.currentTeam ? `Signed — ${p.currentTeam.name}` : 'Available'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <AddLegacyPlayerForm token={token} onAdded={refresh} />
+      </section>
+
+      <section className="card">
         <CollapsibleList label="Player transfer counts" items={players} getName={(p) => p.name}>
           {(filtered) => (
             <table>
@@ -177,5 +218,59 @@ export function AdminTeamsPage() {
         </CollapsibleList>
       </section>
     </DashboardShell>
+  );
+}
+
+function AddLegacyPlayerForm({ token, onAdded }: { token: string | null; onAdded: () => void }) {
+  const [name, setName] = useState('');
+  const [clubName, setClubName] = useState('');
+  const [legacyReason, setLegacyReason] = useState<LegacyReason | ''>('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !clubName.trim() || !legacyReason) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await api.post('/players/legacy', { name: name.trim(), clubName: clubName.trim(), legacyReason }, token);
+      setName('');
+      setClubName('');
+      setLegacyReason('');
+      onAdded();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to add legacy player');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="inline-form" style={{ marginTop: '1rem' }}>
+      <label>
+        Player name
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <label>
+        Club name
+        <input type="text" value={clubName} onChange={(e) => setClubName(e.target.value)} />
+      </label>
+      <label>
+        Reason
+        <select value={legacyReason} onChange={(e) => setLegacyReason(e.target.value as LegacyReason)}>
+          <option value="">Select a reason…</option>
+          {LEGACY_REASONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" disabled={!name.trim() || !clubName.trim() || !legacyReason || submitting}>
+        {submitting ? 'Adding…' : 'Add to pool'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </form>
   );
 }
