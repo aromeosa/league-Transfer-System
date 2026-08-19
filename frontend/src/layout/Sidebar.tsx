@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOutIcon } from '../components/icons';
+import { LogOutIcon, UserIcon } from '../components/icons';
 import { Logo } from '../components/Logo';
 
 export interface NavItem {
@@ -16,7 +16,8 @@ export function Sidebar({
 }: {
   navItems: NavItem[];
   userName?: string;
-  onLogout: () => void;
+  /** Omit on public/unauthenticated pages — the footer shows a "Sign in" link instead. */
+  onLogout?: () => void;
 }) {
   const location = useLocation();
 
@@ -36,11 +37,20 @@ export function Sidebar({
         ))}
       </nav>
       <div className="sidebar-footer">
-        {userName && <span className="user-chip">{userName}</span>}
-        <button type="button" className="sidebar-link sidebar-logout" onClick={onLogout}>
-          <LogOutIcon />
-          Sign out
-        </button>
+        {onLogout ? (
+          <>
+            {userName && <span className="user-chip">{userName}</span>}
+            <button type="button" className="sidebar-link sidebar-logout" onClick={onLogout}>
+              <LogOutIcon />
+              Sign out
+            </button>
+          </>
+        ) : (
+          <Link to="/login" className="sidebar-link">
+            <UserIcon />
+            Sign in
+          </Link>
+        )}
       </div>
     </aside>
   );

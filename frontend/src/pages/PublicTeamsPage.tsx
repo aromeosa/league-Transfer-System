@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
 import type { Player, Team } from '../types';
 import { StatTile } from '../components/StatTile';
-import { ThemeToggleButton } from '../components/ThemeToggleButton';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 import { TableIcon, UsersIcon } from '../components/icons';
-import { Logo } from '../components/Logo';
+import { DashboardShell } from '../layout/DashboardShell';
+import { FREE_AGENT_PUBLIC_NAV } from './FreeAgentsPage';
 
 const ROSTER_MAX = 15;
 
 export function PublicTeamsPage() {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [freeAgents, setFreeAgents] = useState<Player[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,19 +37,12 @@ export function PublicTeamsPage() {
   const isFreeAgent = user?.role === 'FREE_AGENT';
 
   return (
-    <div className="page">
-      <header className="topbar">
-        <span className="topbar-brand">
-          <Logo />
-          <strong>Teams</strong>
-        </span>
-        <span className="shell-topbar-actions">
-          <ThemeToggleButton />
-          <Link to="/free-agents">Free agents</Link>
-          {!user && <Link to="/login">Sign in</Link>}
-        </span>
-      </header>
-
+    <DashboardShell
+      title="Teams"
+      navItems={FREE_AGENT_PUBLIC_NAV}
+      userName={user?.name}
+      onLogout={user ? logout : undefined}
+    >
       {error && <p className="error">{error}</p>}
       {!teams && !error && <p>Loading…</p>}
 
@@ -99,7 +91,7 @@ export function PublicTeamsPage() {
           </CollapsibleList>
         </section>
       ))}
-    </div>
+    </DashboardShell>
   );
 }
 

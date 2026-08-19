@@ -13,7 +13,8 @@ export function DashboardShell({
   navItems: NavItem[];
   title: string;
   userName?: string;
-  onLogout: () => void;
+  /** Omit on public/unauthenticated pages. */
+  onLogout?: () => void;
   children: ReactNode;
 }) {
   return (

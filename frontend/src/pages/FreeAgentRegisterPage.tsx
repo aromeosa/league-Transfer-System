@@ -3,8 +3,9 @@ import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { PlayerPosition } from '../types';
-import { ThemeToggleButton } from '../components/ThemeToggleButton';
-import { Logo } from '../components/Logo';
+import { DashboardShell } from '../layout/DashboardShell';
+import { FREE_AGENT_PUBLIC_NAV } from './FreeAgentsPage';
+import { useAuth } from '../auth/AuthContext';
 
 const POSITIONS: { value: PlayerPosition; label: string }[] = [
   { value: 'GK', label: 'Goalkeeper (GK)' },
@@ -14,6 +15,7 @@ const POSITIONS: { value: PlayerPosition; label: string }[] = [
 ];
 
 export function FreeAgentRegisterPage() {
+  const { user, logout } = useAuth();
   const [name, setName] = useState('');
   const [position, setPosition] = useState<PlayerPosition | ''>('');
   const [email, setEmail] = useState('');
@@ -45,11 +47,13 @@ export function FreeAgentRegisterPage() {
   }
 
   return (
-    <div className="centered-page">
-      <ThemeToggleButton className="theme-toggle-corner" />
-      <div className="card" style={{ maxWidth: 480 }}>
-        <Logo className="auth-logo" />
-        <h1>Sign up as a Free Agent</h1>
+    <DashboardShell
+      title="Sign up as a Free Agent"
+      navItems={FREE_AGENT_PUBLIC_NAV}
+      userName={user?.name}
+      onLogout={user ? logout : undefined}
+    >
+      <section className="card" style={{ maxWidth: 480 }}>
         {submitted ? (
           <>
             <p className="banner banner-good">
@@ -118,7 +122,7 @@ export function FreeAgentRegisterPage() {
             </p>
           </>
         )}
-      </div>
-    </div>
+      </section>
+    </DashboardShell>
   );
 }

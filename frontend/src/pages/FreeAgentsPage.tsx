@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import type { Player } from '../types';
 import { StatTile } from '../components/StatTile';
-import { ThemeToggleButton } from '../components/ThemeToggleButton';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
-import { UsersIcon } from '../components/icons';
-import { Logo } from '../components/Logo';
+import { DashboardShell } from '../layout/DashboardShell';
+import { HomeIcon, TableIcon, UserIcon, UsersIcon } from '../components/icons';
+import { useAuth } from '../auth/AuthContext';
+
+export const FREE_AGENT_PUBLIC_NAV = [
+  { label: 'Free Agents', path: '/free-agents', icon: <HomeIcon /> },
+  { label: 'Sign up', path: '/register-free-agent', icon: <UserIcon /> },
+  { label: 'View Teams', path: '/teams', icon: <TableIcon /> },
+];
 
 export function FreeAgentsPage() {
+  const { user, logout } = useAuth();
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,19 +34,12 @@ export function FreeAgentsPage() {
   }, []);
 
   return (
-    <div className="page">
-      <header className="topbar">
-        <span className="topbar-brand">
-          <Logo />
-          <strong>Free Agents</strong>
-        </span>
-        <span className="shell-topbar-actions">
-          <ThemeToggleButton />
-          <Link to="/teams">View teams</Link>
-          <Link to="/login">Sign in</Link>
-        </span>
-      </header>
-
+    <DashboardShell
+      title="Free Agents"
+      navItems={FREE_AGENT_PUBLIC_NAV}
+      userName={user?.name}
+      onLogout={user ? logout : undefined}
+    >
       {error && <p className="error">{error}</p>}
       {!players && !error && <p>Loading…</p>}
 
@@ -53,6 +52,6 @@ export function FreeAgentsPage() {
       <section className="card">
         <FreeAgentsTable players={players ?? []} label="Current Free Agents" defaultOpen />
       </section>
-    </div>
+    </DashboardShell>
   );
 }
