@@ -57,6 +57,15 @@ export class PlayersController {
     return this.playersService.addLegacyPlayer(dto.name, dto.legacyTeamId, dto.legacyReason, user);
   }
 
+  /** League Admin releases a signed legacy player directly — no approval step needed,
+   * unlike a team-initiated deregistration of a regular player. */
+  @Post(':id/deregister-legacy')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LEAGUE_ADMIN)
+  deregisterLegacyPlayer(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.adminDeregisterLegacyPlayer(id, user);
+  }
+
   @Patch(':id/value')
   @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
   @Roles(UserRole.TEAM_OWNER)

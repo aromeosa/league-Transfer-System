@@ -561,7 +561,8 @@ function DeregisterPlayerForm({
     <section className="card">
       <h2>Deregister a player</h2>
       <p className="muted">
-        Removes a player from your roster — requires League Admin authorization before it takes effect.
+        Removes a player from your roster — requires League Admin authorization before it takes effect. This
+        includes legacy players signed to your team.
       </p>
       <form onSubmit={handleSubmit} className="inline-form">
         <label>
@@ -571,6 +572,7 @@ function DeregisterPlayerForm({
             {selectable.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
+                {p.status === 'LEGACY' ? ' (Legacy)' : ''}
               </option>
             ))}
           </select>

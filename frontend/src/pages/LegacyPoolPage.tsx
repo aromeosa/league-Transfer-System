@@ -13,6 +13,7 @@ const ROSTER_MAX = 15;
 const LEGACY_REASON_LABEL: Record<LegacyReason, string> = {
   QUALIFIED_MAIN_EVENT: 'Qualified — Main Event',
   ASSISTED_QUALIFICATION: 'Assisted Qualification',
+  QUALIFIER_WINNER: 'Qualifier Winner',
 };
 
 /** Browse by legacy team first, then that team's available legacy players — mirrors

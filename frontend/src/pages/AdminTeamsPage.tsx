@@ -12,6 +12,7 @@ import { CollapsibleList } from '../components/CollapsibleList';
 const LEGACY_REASONS: { value: LegacyReason; label: string }[] = [
   { value: 'QUALIFIED_MAIN_EVENT', label: 'Qualified — Main Event' },
   { value: 'ASSISTED_QUALIFICATION', label: 'Assisted Qualification' },
+  { value: 'QUALIFIER_WINNER', label: 'Qualifier Winner' },
 ];
 
 export function AdminTeamsPage() {
@@ -195,6 +196,7 @@ export function AdminTeamsPage() {
                 <th>Club</th>
                 <th>Reason</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -204,6 +206,11 @@ export function AdminTeamsPage() {
                   <td>{p.legacyTeam?.name ?? '—'}</td>
                   <td>{LEGACY_REASONS.find((r) => r.value === p.legacyReason)?.label ?? p.legacyReason ?? '—'}</td>
                   <td>{p.currentTeam ? `Signed — ${p.currentTeam.name}` : 'Available'}</td>
+                  <td>
+                    {p.currentTeam && (
+                      <DeregisterLegacyPlayerButton playerId={p.id} token={token} onDeregistered={refresh} />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -241,6 +248,47 @@ export function AdminTeamsPage() {
         </CollapsibleList>
       </section>
     </DashboardShell>
+  );
+}
+
+/** League Admin releases a signed legacy player directly, straight back to "Available"
+ * in the pool — no approval step, since the admin already curates the pool directly
+ * (unlike a team-initiated deregistration of a regular player, which needs one). */
+function DeregisterLegacyPlayerButton({
+  playerId,
+  token,
+  onDeregistered,
+}: {
+  playerId: string;
+  token: string | null;
+  onDeregistered: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function deregister() {
+    if (!window.confirm('Deregister this legacy player from their current team? They return to the pool as available.')) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/players/${playerId}/deregister-legacy`, {}, token);
+      onDeregistered();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to deregister player');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button disabled={busy} onClick={deregister}>
+        {busy ? 'Deregistering…' : 'Deregister'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </>
   );
 }
 
