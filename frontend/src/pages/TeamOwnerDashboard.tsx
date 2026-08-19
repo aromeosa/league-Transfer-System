@@ -268,9 +268,9 @@ function PlayerAvatarCell({
   );
 }
 
-// Deliberately tiny right now for live PayFast testing with real transactions.
-const VALUE_MIN = 10;
-const VALUE_MAX = 20;
+// Mirrors the backend's valuation range (§1.3 / BusinessRules.VALUATION_MIN/MAX).
+const VALUE_MIN = 500;
+const VALUE_MAX = 5000;
 
 // Mirrors the backend's roster ceiling (§4.2 / BusinessRules.ROSTER_MAX) — signing a
 // free agent is disabled once a roster is already full, re-enabled once it drops below.

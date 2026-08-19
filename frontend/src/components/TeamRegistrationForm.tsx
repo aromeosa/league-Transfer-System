@@ -6,10 +6,9 @@ import { api, ApiError } from '../api/client';
 const MIN_PLAYERS = 5;
 const MAX_PLAYERS = 15;
 
-// Mirrors the backend's valuation range (§1.3 / BusinessRules.VALUATION_MIN/MAX) —
-// deliberately tiny right now for live PayFast testing with real transactions.
-const VALUE_MIN = 10;
-const VALUE_MAX = 20;
+// Mirrors the backend's valuation range (§1.3 / BusinessRules.VALUATION_MIN/MAX).
+const VALUE_MIN = 500;
+const VALUE_MAX = 5000;
 
 interface PlayerRow {
   name: string;
