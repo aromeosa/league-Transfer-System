@@ -260,6 +260,33 @@ export class PlayersService {
     return this.playerRepo.save(player);
   }
 
+  /** A Free Agent's own profile — works whether they're still unattached or have
+   * since been signed (their account keeps the FREE_AGENT role either way). */
+  async findOwn(actingUser: AuthenticatedUser): Promise<Player> {
+    return this.getOwnPlayer(actingUser);
+  }
+
+  /** Free Agent uploads/replaces their own profile photo — self-service, no team involved. */
+  async updateOwnPhoto(photoDataUrl: string, actingUser: AuthenticatedUser): Promise<Player> {
+    const player = await this.getOwnPlayer(actingUser);
+    player.avatarUrl = photoDataUrl;
+    return this.playerRepo.save(player);
+  }
+
+  private async getOwnPlayer(actingUser: AuthenticatedUser): Promise<Player> {
+    if (actingUser.role !== UserRole.FREE_AGENT || !actingUser.playerId) {
+      throw new ForbiddenException('Only a Free Agent may manage their own profile');
+    }
+    const player = await this.playerRepo.findOne({
+      where: { id: actingUser.playerId },
+      relations: ['currentTeam'],
+    });
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
+    return player;
+  }
+
   private async getOwnedPlayer(playerId: string, actingUser: AuthenticatedUser): Promise<Player> {
     if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
       throw new ForbiddenException('Only a team owner may manage their own players');
