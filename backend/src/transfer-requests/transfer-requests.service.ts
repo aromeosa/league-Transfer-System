@@ -617,6 +617,55 @@ export class TransferRequestsService {
     return this.findOneForUser(requestId, actingUser);
   }
 
+  /**
+   * Step 2 of the payment timeline — the League Admin attests they've forwarded the
+   * club's bundled 80% settlement (club + player entitlement) outside the system;
+   * nothing here actually moves money. Only meaningful once the team's own payment to
+   * the league (step 1) is confirmed.
+   */
+  async markClubPaid(requestId: string, actingUser: AuthenticatedUser): Promise<Payment> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may mark a club as paid');
+    }
+    const paymentRepo = this.dataSource.getRepository(Payment);
+    const payment = await paymentRepo.findOne({ where: { request: { id: requestId } } });
+    if (!payment) {
+      throw new NotFoundException('No payment found for this request');
+    }
+    if (payment.status !== PaymentStatus.CONFIRMED) {
+      throw new ConflictException('Payment must be confirmed before the club can be marked as paid');
+    }
+    if (payment.clubPaidAt) {
+      throw new ConflictException('Already marked as paid to the club');
+    }
+    payment.clubPaidAt = new Date();
+    return paymentRepo.save(payment);
+  }
+
+  /**
+   * Step 3 — the player's entitlement, which only ever reaches them via the club (the
+   * system has no player payout account), so this can't be marked until the club leg
+   * (step 2) already has been.
+   */
+  async markPlayerPaid(requestId: string, actingUser: AuthenticatedUser): Promise<Payment> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may mark a player as paid');
+    }
+    const paymentRepo = this.dataSource.getRepository(Payment);
+    const payment = await paymentRepo.findOne({ where: { request: { id: requestId } } });
+    if (!payment) {
+      throw new NotFoundException('No payment found for this request');
+    }
+    if (!payment.clubPaidAt) {
+      throw new ConflictException('The club must be marked as paid before the player can be');
+    }
+    if (payment.playerPaidAt) {
+      throw new ConflictException('Already marked as paid to the player');
+    }
+    payment.playerPaidAt = new Date();
+    return paymentRepo.save(payment);
+  }
+
   // ---------------------------------------------------------------------------
   // League Admin decision (§7.4 POST /transfer-requests/:id/league-decision, FR-26)
   // ---------------------------------------------------------------------------

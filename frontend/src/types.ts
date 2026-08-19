@@ -111,4 +111,6 @@ export interface Payment {
   gatewayTransactionId?: string | null;
   createdAt: string;
   confirmedAt?: string | null;
+  clubPaidAt?: string | null;
+  playerPaidAt?: string | null;
 }

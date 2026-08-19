@@ -79,6 +79,18 @@ export class TransferRequestsController {
     return this.service.confirmPaymentManually(id, user);
   }
 
+  /** Step 2 of the payment timeline — attests the club's bundled settlement has been forwarded. */
+  @Post(':id/payment/mark-club-paid')
+  markClubPaid(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.markClubPaid(id, user);
+  }
+
+  /** Step 3 — attests the player's entitlement (via the club) has been forwarded. */
+  @Post(':id/payment/mark-player-paid')
+  markPlayerPaid(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.markPlayerPaid(id, user);
+  }
+
   @Post(':id/league-decision')
   leagueDecision(@Param('id') id: string, @Body() dto: DecisionDto, @CurrentUser() user: AuthenticatedUser) {
     return this.service.leagueDecision(id, dto, user);

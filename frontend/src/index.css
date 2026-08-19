@@ -852,6 +852,79 @@ button + button {
   color: var(--pending);
 }
 
+/* ---------- Payment timeline (3-step settlement checklist) ---------- */
+
+.payment-timeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.payment-timeline-step {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 140px;
+}
+
+.payment-timeline-marker-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+}
+
+.payment-timeline-marker {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--surface-secondary);
+  color: var(--text-muted);
+  border: 2px solid var(--border);
+  flex: none;
+}
+
+.payment-timeline-marker.done {
+  background: var(--good);
+  color: white;
+  border-color: var(--good);
+}
+
+.payment-timeline-connector {
+  flex: 1;
+  width: 2px;
+  min-height: 1.5rem;
+  background: var(--border);
+  margin: 0.15rem 0;
+}
+
+.payment-timeline-connector.done {
+  background: var(--good);
+}
+
+.payment-timeline-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0 0.75rem 1.25rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.payment-timeline-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.payment-timeline-at {
+  font-size: 0.76rem;
+}
+
 ::-webkit-scrollbar {
   height: 8px;
   width: 8px;
