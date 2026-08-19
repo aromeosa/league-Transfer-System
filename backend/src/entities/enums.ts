@@ -90,3 +90,14 @@ export enum PaymentStatus {
   CONFIRMED = 'CONFIRMED',
   FAILED = 'FAILED',
 }
+
+export enum DeregistrationReason {
+  BAD_BEHAVIOUR = 'BAD_BEHAVIOUR',
+  MUTUAL_AGREEMENT = 'MUTUAL_AGREEMENT',
+}
+
+export enum DeregistrationStatus {
+  PENDING_LEAGUE_APPROVAL = 'PENDING_LEAGUE_APPROVAL',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}

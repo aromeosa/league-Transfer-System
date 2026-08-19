@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { Player, RequestType, Team, TransferRequest, TransferWindow } from '../types';
+import type { DeregistrationReason, Player, PlayerDeregistrationRequest, RequestType, Team, TransferRequest, TransferWindow } from '../types';
 import { StatTile } from '../components/StatTile';
 import { DashboardShell } from '../layout/DashboardShell';
 import { CameraIcon, HomeIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
@@ -16,6 +16,7 @@ export function TeamOwnerDashboard() {
   const [window_, setWindow] = useState<TransferWindow | null>(null);
   const [available, setAvailable] = useState<Player[]>([]);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
+  const [deregistrations, setDeregistrations] = useState<PlayerDeregistrationRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
@@ -26,20 +27,23 @@ export function TeamOwnerDashboard() {
 
     async function load() {
       try {
-        const [teamRes, windowRes, freeAgents, registered, legacy, requestsRes] = await Promise.all([
-          api.get<Team>(`/teams/${user!.teamId}`, token),
-          api.get<TransferWindow | null>('/transfer-windows/current', token),
-          api.get<Player[]>('/players?status=FREE_AGENT', token),
-          api.get<Player[]>('/players?status=REGISTERED', token),
-          api.get<Player[]>('/players?status=LEGACY', token),
-          api.get<TransferRequest[]>('/transfer-requests', token),
-        ]);
+        const [teamRes, windowRes, freeAgents, registered, legacy, requestsRes, deregistrationsRes] =
+          await Promise.all([
+            api.get<Team>(`/teams/${user!.teamId}`, token),
+            api.get<TransferWindow | null>('/transfer-windows/current', token),
+            api.get<Player[]>('/players?status=FREE_AGENT', token),
+            api.get<Player[]>('/players?status=REGISTERED', token),
+            api.get<Player[]>('/players?status=LEGACY', token),
+            api.get<TransferRequest[]>('/transfer-requests', token),
+            api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+          ]);
         if (cancelled) return;
         setTeam(teamRes);
         setWindow(windowRes);
         const myPlayerIds = new Set(teamRes.roster?.map((p) => p.id));
         setAvailable([...freeAgents, ...registered, ...legacy].filter((p) => !myPlayerIds.has(p.id)));
         setRequests(requestsRes);
+        setDeregistrations(deregistrationsRes);
       } catch (err) {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
       }
@@ -160,6 +164,13 @@ export function TeamOwnerDashboard() {
           </tbody>
         </table>
       </section>
+
+      <DeregisterPlayerForm
+        roster={team.roster ?? []}
+        deregistrations={deregistrations}
+        token={token}
+        onSubmitted={refresh}
+      />
 
       <AddPlayerForm
         rosterSize={team.roster?.length ?? 0}
@@ -492,6 +503,121 @@ function PlayerPicker({
         </div>
       )}
     </div>
+  );
+}
+
+const DEREGISTRATION_REASONS: { value: DeregistrationReason; label: string }[] = [
+  { value: 'BAD_BEHAVIOUR', label: 'Bad behaviour' },
+  { value: 'MUTUAL_AGREEMENT', label: 'Mutual agreement' },
+];
+
+/**
+ * Removing a player from the roster — requires League Admin authorization before it
+ * takes effect, so submitting here doesn't remove them immediately. The reason is
+ * required up front and stays attached to the request so the admin sees it before
+ * deciding, not just in an audit log afterwards.
+ */
+function DeregisterPlayerForm({
+  roster,
+  deregistrations,
+  token,
+  onSubmitted,
+}: {
+  roster: Player[];
+  deregistrations: PlayerDeregistrationRequest[];
+  token: string | null;
+  onSubmitted: () => void;
+}) {
+  const [playerId, setPlayerId] = useState('');
+  const [reason, setReason] = useState<DeregistrationReason | ''>('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const pendingPlayerIds = new Set(
+    deregistrations.filter((d) => d.status === 'PENDING_LEAGUE_APPROVAL').map((d) => d.player.id),
+  );
+  const selectable = roster.filter((p) => !pendingPlayerIds.has(p.id));
+  const recent = [...deregistrations].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!playerId || !reason) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await api.post('/player-deregistrations', { playerId, reason }, token);
+      setPlayerId('');
+      setReason('');
+      onSubmitted();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to submit deregistration request');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2>Deregister a player</h2>
+      <p className="muted">
+        Removes a player from your roster — requires League Admin authorization before it takes effect.
+      </p>
+      <form onSubmit={handleSubmit} className="inline-form">
+        <label>
+          Player
+          <select value={playerId} onChange={(e) => setPlayerId(e.target.value)}>
+            <option value="">Select a player…</option>
+            {selectable.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Reason
+          <select value={reason} onChange={(e) => setReason(e.target.value as DeregistrationReason)}>
+            <option value="">Select a reason…</option>
+            {DEREGISTRATION_REASONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" disabled={!playerId || !reason || submitting}>
+          {submitting ? 'Submitting…' : 'Request deregistration'}
+        </button>
+      </form>
+      {error && <p className="error">{error}</p>}
+
+      {recent.length > 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Reason</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recent.map((d) => (
+              <tr key={d.id}>
+                <td>{d.player.name}</td>
+                <td>{DEREGISTRATION_REASONS.find((r) => r.value === d.reason)?.label ?? d.reason}</td>
+                <td>
+                  <span
+                    className={`badge ${d.status === 'APPROVED' ? 'badge-good' : d.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}
+                  >
+                    {d.status === 'PENDING_LEAGUE_APPROVAL' ? 'Awaiting League Admin' : d.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 

@@ -9,6 +9,7 @@ import { PlayersModule } from './players/players.module';
 import { TransferWindowsModule } from './transfer-windows/transfer-windows.module';
 import { PaymentGatewayModule } from './payment-gateway/payment-gateway.module';
 import { TransferRequestsModule } from './transfer-requests/transfer-requests.module';
+import { PlayerDeregistrationsModule } from './player-deregistrations/player-deregistrations.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TransferRequestsModule } from './transfer-requests/transfer-requests.mo
     TransferWindowsModule,
     PaymentGatewayModule,
     TransferRequestsModule,
+    PlayerDeregistrationsModule,
   ],
 })
 export class AppModule {}

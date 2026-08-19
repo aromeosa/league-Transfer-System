@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { Player, RequestStatus, TransferRequest } from '../types';
+import type { DeregistrationReason, Player, PlayerDeregistrationRequest, RequestStatus, TransferRequest } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { HomeIcon, TableIcon, ClockIcon } from '../components/icons';
 
@@ -31,6 +31,11 @@ const DECISION_TONE: Partial<Record<RequestStatus, 'good' | 'bad'>> = {
   CANCELLED_PLAYER_UNAVAILABLE: 'bad',
 };
 
+const DEREGISTRATION_REASON_LABEL: Record<DeregistrationReason, string> = {
+  BAD_BEHAVIOUR: 'bad behaviour',
+  MUTUAL_AGREEMENT: 'mutual agreement',
+};
+
 interface TimelineEvent {
   id: string;
   at: string;
@@ -42,7 +47,11 @@ interface TimelineEvent {
   fee: string;
 }
 
-function buildTimeline(requests: TransferRequest[], players: Player[]): TimelineEvent[] {
+function buildTimeline(
+  requests: TransferRequest[],
+  players: Player[],
+  deregistrations: PlayerDeregistrationRequest[],
+): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   for (const r of requests) {
     const player = r.player.name;
@@ -87,6 +96,32 @@ function buildTimeline(requests: TransferRequest[], players: Player[]): Timeline
     });
   }
 
+  for (const d of deregistrations) {
+    const reasonLabel = DEREGISTRATION_REASON_LABEL[d.reason];
+    events.push({
+      id: `${d.id}-requested`,
+      at: d.createdAt,
+      label: `Deregistration requested (${reasonLabel})`,
+      tone: 'pending',
+      player: d.player.name,
+      from: d.team.name,
+      to: '—',
+      fee: '—',
+    });
+    if (d.decidedAt) {
+      events.push({
+        id: `${d.id}-decided`,
+        at: d.decidedAt,
+        label: d.status === 'APPROVED' ? 'Deregistration approved' : 'Deregistration rejected',
+        tone: d.status === 'APPROVED' ? 'good' : 'bad',
+        player: d.player.name,
+        from: d.team.name,
+        to: '—',
+        fee: '—',
+      });
+    }
+  }
+
   return events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 }
 
@@ -94,15 +129,21 @@ export function AdminEventsPage() {
   const { user, token, logout } = useAuth();
   const [requests, setRequests] = useState<TransferRequest[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [deregistrations, setDeregistrations] = useState<PlayerDeregistrationRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.get<TransferRequest[]>('/transfer-requests', token), api.get<Player[]>('/players', token)])
-      .then(([requestsRes, playersRes]) => {
+    Promise.all([
+      api.get<TransferRequest[]>('/transfer-requests', token),
+      api.get<Player[]>('/players', token),
+      api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+    ])
+      .then(([requestsRes, playersRes, deregistrationsRes]) => {
         if (cancelled) return;
         setRequests(requestsRes);
         setPlayers(playersRes);
+        setDeregistrations(deregistrationsRes);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load events');
@@ -112,7 +153,10 @@ export function AdminEventsPage() {
     };
   }, [token]);
 
-  const timeline = useMemo(() => buildTimeline(requests, players), [requests, players]);
+  const timeline = useMemo(
+    () => buildTimeline(requests, players, deregistrations),
+    [requests, players, deregistrations],
+  );
 
   return (
     <DashboardShell title="All Events" userName={user?.name} onLogout={logout} navItems={ADMIN_NAV}>
