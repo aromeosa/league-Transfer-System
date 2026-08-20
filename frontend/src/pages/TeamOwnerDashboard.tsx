@@ -623,8 +623,8 @@ function RequestLegacyModeCard({
     <section className="card">
       <h2>Request legacy mode</h2>
       <p className="muted">
-        Won a tournament outright? Request legacy mode to have your whole registered roster promoted to Legacy
-        status at once — requires League Admin approval before it takes effect.
+        When you win a qualifier, you may request legacy mode. Requires League Admin approval before it takes
+        effect.
       </p>
       {registeredCount === 0 ? (
         <p className="muted">You have no registered players to promote.</p>
