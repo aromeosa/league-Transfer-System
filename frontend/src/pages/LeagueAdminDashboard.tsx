@@ -19,7 +19,6 @@ export function LeagueAdminDashboard() {
   const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
   const [activeTeamCount, setActiveTeamCount] = useState(0);
   const [playerCount, setPlayerCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
   const [expandedPaymentIds, setExpandedPaymentIds] = useState<Set<string>>(new Set());
@@ -35,26 +34,26 @@ export function LeagueAdminDashboard() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      try {
-        const [windowRes, requestsRes, deregistrationsRes, pendingTeamsRes, activeTeamsRes, playersRes] =
-          await Promise.all([
-            api.get<TransferWindow | null>('/transfer-windows/current', token),
-            api.get<TransferRequest[]>('/transfer-requests', token),
-            api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
-            api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
-            api.get<Team[]>('/teams?status=ACTIVE', token),
-            api.get<Player[]>('/players', token),
-          ]);
-        if (cancelled) return;
-        setWindow(windowRes);
-        setRequests(requestsRes);
-        setDeregistrations(deregistrationsRes);
-        setPendingTeams(pendingTeamsRes);
-        setActiveTeamCount(activeTeamsRes.length);
-        setPlayerCount(playersRes.length);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
-      }
+      // Every section below is independent (window controls, requests, deregistrations,
+      // pending teams, stat tiles) — Promise.allSettled means a hiccup in any one of
+      // these can never blank the whole dashboard behind a generic error; each just
+      // falls back to an empty value on failure.
+      const [windowRes, requestsRes, deregistrationsRes, pendingTeamsRes, activeTeamsRes, playersRes] =
+        await Promise.allSettled([
+          api.get<TransferWindow | null>('/transfer-windows/current', token),
+          api.get<TransferRequest[]>('/transfer-requests', token),
+          api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+          api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
+          api.get<Team[]>('/teams?status=ACTIVE', token),
+          api.get<Player[]>('/players', token),
+        ]);
+      if (cancelled) return;
+      setWindow(windowRes.status === 'fulfilled' ? windowRes.value : null);
+      setRequests(requestsRes.status === 'fulfilled' ? requestsRes.value : []);
+      setDeregistrations(deregistrationsRes.status === 'fulfilled' ? deregistrationsRes.value : []);
+      setPendingTeams(pendingTeamsRes.status === 'fulfilled' ? pendingTeamsRes.value : []);
+      setActiveTeamCount(activeTeamsRes.status === 'fulfilled' ? activeTeamsRes.value.length : 0);
+      setPlayerCount(playersRes.status === 'fulfilled' ? playersRes.value.length : 0);
     }
     load();
     return () => {
@@ -72,8 +71,6 @@ export function LeagueAdminDashboard() {
       onLogout={logout}
       navItems={ADMIN_NAV}
     >
-      {error && <p className="error">{error}</p>}
-
       <div className="stat-tile-row">
         <StatTile icon={<UsersIcon />} label="Active teams" value={activeTeamCount} />
         <StatTile icon={<UserCogIcon />} label="Pending approvals" value={pendingTeams.length} />
