@@ -14,6 +14,7 @@ const LEGACY_REASON_LABEL: Record<LegacyReason, string> = {
   QUALIFIED_MAIN_EVENT: 'Qualified — Main Event',
   ASSISTED_QUALIFICATION: 'Assisted Qualification',
   QUALIFIER_WINNER: 'Qualifier Winner',
+  TOURNAMENT_WINNER: 'Tournament Winner',
 };
 
 /** Browse by legacy team first, then that team's available legacy players — mirrors

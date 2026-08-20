@@ -8,6 +8,7 @@ import { DashboardShell } from '../layout/DashboardShell';
 import { TEAM_OWNER_NAV } from '../layout/nav';
 import { CameraIcon, TableIcon, TransferIcon, UsersIcon } from '../components/icons';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { PlayerStatusBadge } from '../components/PlayerStatusBadge';
 import { TeamLogo } from '../components/TeamLogo';
 import { RequestTable } from '../components/RequestTable';
 import { resizeImageToDataUrl } from '../utils/resizeImage';
@@ -146,7 +147,9 @@ export function TeamOwnerDashboard() {
                 <td>
                   <PlayerAvatarCell player={p} token={token} onUpdated={refresh} />
                 </td>
-                <td>{p.status}</td>
+                <td>
+                  <PlayerStatusBadge status={p.status} />
+                </td>
                 <td>{p.originType}</td>
                 <td>
                   <PlayerValueCell

@@ -37,6 +37,9 @@ export enum LegacyReason {
   QUALIFIED_MAIN_EVENT = 'QUALIFIED_MAIN_EVENT',
   ASSISTED_QUALIFICATION = 'ASSISTED_QUALIFICATION',
   QUALIFIER_WINNER = 'QUALIFIER_WINNER',
+  /** A team's whole registered roster promoted at once after winning a tournament outright
+   *  (see TeamsService.markTournamentWinner) — distinct from qualifying for one. */
+  TOURNAMENT_WINNER = 'TOURNAMENT_WINNER',
 }
 
 export enum WindowStatus {

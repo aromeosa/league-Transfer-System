@@ -14,6 +14,10 @@
   --bad-soft: #fdeceb;
   --pending: #ffb547;
   --pending-soft: #fff6e8;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
+  --legacy: #a16207;
+  --legacy-soft: #fef3c7;
   --shadow: 0 18px 40px -20px rgba(112, 111, 244, 0.28);
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -38,6 +42,10 @@
     --bad-soft: #402022;
     --pending: #ffb547;
     --pending-soft: #3d2f13;
+    --info: #60a5fa;
+    --info-soft: #1e3a5f;
+    --legacy: #eab308;
+    --legacy-soft: #422f0a;
     --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.55);
     color-scheme: dark;
   }
@@ -59,6 +67,10 @@
   --bad-soft: #402022;
   --pending: #ffb547;
   --pending-soft: #3d2f13;
+  --info: #60a5fa;
+  --info-soft: #1e3a5f;
+  --legacy: #eab308;
+  --legacy-soft: #422f0a;
   --shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
@@ -79,6 +91,10 @@
   --bad-soft: #fdeceb;
   --pending: #ffb547;
   --pending-soft: #fff6e8;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
+  --legacy: #a16207;
+  --legacy-soft: #fef3c7;
   --shadow: 0 18px 40px -20px rgba(112, 111, 244, 0.28);
   color-scheme: light;
 }
@@ -977,6 +993,16 @@ button + button {
 .badge-pending {
   background: var(--pending-soft);
   color: var(--pending);
+}
+
+.badge-info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.badge-legacy {
+  background: var(--legacy-soft);
+  color: var(--legacy);
 }
 
 /* ---------- Payment timeline (3-step settlement checklist) ---------- */

@@ -6,6 +6,7 @@ import { StatTile } from '../components/StatTile';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
 import { TeamLogo } from '../components/TeamLogo';
+import { PlayerStatusBadge } from '../components/PlayerStatusBadge';
 import { TableIcon, UsersIcon } from '../components/icons';
 import { DashboardShell } from '../layout/DashboardShell';
 import { getNavForUser } from '../layout/nav';
@@ -85,7 +86,9 @@ export function PublicTeamsPage() {
                   {filtered.map((p) => (
                     <tr key={p.id}>
                       <td>{p.name}</td>
-                      <td>{p.status}</td>
+                      <td>
+                        <PlayerStatusBadge status={p.status} />
+                      </td>
                       <td>{p.originType}</td>
                       <td>{p.transferValue != null ? `R${p.transferValue}` : '—'}</td>
                     </tr>

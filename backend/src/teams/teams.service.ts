@@ -3,6 +3,8 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import {
+  LegacyReason,
+  LegacyTeam,
   Player,
   PlayerOrigin,
   PlayerStatus,
@@ -109,6 +111,52 @@ export class TeamsService {
     team.logoUrl = logoDataUrl;
     await this.teamRepo.save(team);
     return this.getTeam(team.id);
+  }
+
+  /**
+   * League Admin declares a team the outright winner of a tournament — every currently
+   * REGISTERED player on its roster is promoted to LEGACY at once, tagged with the new
+   * TOURNAMENT_WINNER reason. A legacy player must belong to a LegacyTeam (§ admin-curated
+   * pool rule), so this finds-or-creates a LegacyTeam matching the winning team's name
+   * (case/whitespace-insensitive, since real team names in this system carry stray
+   * whitespace) rather than requiring the admin to add one separately first.
+   */
+  async markTournamentWinner(teamId: string, actingUser: AuthenticatedUser): Promise<Team> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may declare a tournament winner');
+    }
+
+    const team = await this.teamRepo.findOne({ where: { id: teamId }, relations: ['roster'] });
+    if (!team) {
+      throw new NotFoundException('Team not found');
+    }
+
+    const eligiblePlayers = (team.roster ?? []).filter((p) => p.status === PlayerStatus.REGISTERED);
+    if (eligiblePlayers.length === 0) {
+      throw new ConflictException('This team has no registered players to promote to legacy status');
+    }
+
+    const normalizedName = team.name.trim().toLowerCase();
+
+    return this.dataSource.transaction(async (manager) => {
+      const legacyTeamRepo = manager.getRepository(LegacyTeam);
+      let legacyTeam = (await legacyTeamRepo.find()).find(
+        (lt) => lt.name.trim().toLowerCase() === normalizedName,
+      );
+      if (!legacyTeam) {
+        legacyTeam = await legacyTeamRepo.save(legacyTeamRepo.create({ name: team.name }));
+      }
+
+      const playerRepo = manager.getRepository(Player);
+      for (const player of eligiblePlayers) {
+        player.status = PlayerStatus.LEGACY;
+        player.legacyReason = LegacyReason.TOURNAMENT_WINNER;
+        player.legacyTeam = legacyTeam;
+      }
+      await playerRepo.save(eligiblePlayers);
+
+      return this.getTeam(teamId, manager.getRepository(Team));
+    });
   }
 
   async getTeam(teamId: string, repo: Repository<Team> = this.teamRepo): Promise<Team> {
