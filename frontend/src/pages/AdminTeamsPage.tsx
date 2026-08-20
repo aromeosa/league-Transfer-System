@@ -6,7 +6,6 @@ import type { LegacyReason, LegacyTeam, Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { ADMIN_NAV } from '../layout/nav';
 import { PlayerNameCell } from '../components/PlayerNameCell';
-import { PlayerStatusBadge } from '../components/PlayerStatusBadge';
 import { TeamLogo } from '../components/TeamLogo';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
@@ -115,7 +114,6 @@ export function AdminTeamsPage() {
                 <tr>
                   <th>Player</th>
                   <th>Team</th>
-                  <th>Status</th>
                   <th>Origin</th>
                   <th>Value</th>
                   <th>ID verified</th>
@@ -128,9 +126,6 @@ export function AdminTeamsPage() {
                       <PlayerNameCell player={player} />
                     </td>
                     <td>{teamName}</td>
-                    <td>
-                      <PlayerStatusBadge status={player.status} />
-                    </td>
                     <td>{player.originType}</td>
                     <td>{player.transferValue != null ? `R${player.transferValue}` : '—'}</td>
                     <td>{player.idVerified ? <span className="badge badge-good">✓</span> : <span className="muted">—</span>}</td>

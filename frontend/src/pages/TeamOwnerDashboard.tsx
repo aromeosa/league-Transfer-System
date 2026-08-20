@@ -133,7 +133,6 @@ export function TeamOwnerDashboard() {
             <tr>
               <th>#</th>
               <th>Name</th>
-              <th>Status</th>
               <th>Origin</th>
               <th>Value</th>
               <th>Transfers used</th>
@@ -146,9 +145,6 @@ export function TeamOwnerDashboard() {
                 <td>{i + 1}</td>
                 <td>
                   <PlayerAvatarCell player={p} token={token} onUpdated={refresh} />
-                </td>
-                <td>
-                  <PlayerStatusBadge status={p.status} />
                 </td>
                 <td>{p.originType}</td>
                 <td>
@@ -313,6 +309,7 @@ function PlayerAvatarCell({
       <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
       <span>
         {player.name}
+        <PlayerStatusBadge status={player.status} />
         {error && (
           <>
             <br />
