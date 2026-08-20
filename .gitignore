@@ -6,3 +6,8 @@ build/
 .DS_Store
 npm-debug.log*
 coverage/
+
+# Manual DB backups (backend/src/backup-data.ts output) — contains password
+# hashes and account data, never commit.
+backup.json
+backend/backup.json
