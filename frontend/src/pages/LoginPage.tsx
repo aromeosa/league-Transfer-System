@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
 import { ThemeToggleButton } from '../components/ThemeToggleButton';
 import { Logo } from '../components/Logo';
+import { PasswordInput } from '../components/PasswordInput';
 import { HOME_PATH } from '../auth/RequireAuth';
 
 export function LoginPage() {
@@ -44,7 +45,7 @@ export function LoginPage() {
         </label>
         <label>
           Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
         <p className="muted" style={{ marginTop: '-0.5rem' }}>
           <Link to="/forgot-password">Forgot password?</Link>
