@@ -21,10 +21,15 @@ import {
  *  - every LEAGUE_ADMIN account
  *  - the named teams below (owner account + current roster)
  *  - the named free agent(s) below (player + account, if any)
+ *  - the named legacy teams below (owner account + signed legacy players, if any)
  * Wipes everything else, including ALL transfer requests, payments, approval
  * actions, roster history, transfer windows and password-reset tokens —
  * even the ones that touched a kept team — since a request/payment row
  * references both sides of a transaction and can't be cleanly split.
+ *
+ * Note: Team and LegacyTeam are separate tables — a club can have a row in
+ * both. Keeping a Team by name does NOT automatically keep a same-named
+ * LegacyTeam row; list it separately in KEEP_LEGACY_TEAM_NAMES if needed.
  *
  * Two-step safety gate: run with no args first to preview exactly what will
  * be kept/wiped (no writes happen). Only run with `--confirm` once you've
@@ -32,6 +37,7 @@ import {
  */
 const KEEP_TEAM_NAMES = ['Destroyers fc', 'GSW FC', 'Ireland Boys', 'Marabastad Fc', 'Rush Cape Town', 'Brolic FC', 'John Wick FC'];
 const KEEP_FREE_AGENT_NAMES = ['holy smokes'];
+const KEEP_LEGACY_TEAM_NAMES = ['Ireland Boys'];
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
@@ -43,6 +49,7 @@ async function run() {
   await dataSource.initialize();
 
   const teamRepo = dataSource.getRepository(Team);
+  const legacyTeamRepo = dataSource.getRepository(LegacyTeam);
   const playerRepo = dataSource.getRepository(Player);
   const userRepo = dataSource.getRepository(UserAccount);
 
@@ -52,22 +59,33 @@ async function run() {
   const keptTeamIds = new Set(keptTeams.map((t) => t.id));
   const wipedTeams = allTeams.filter((t) => !keptTeamIds.has(t.id));
 
+  const allLegacyTeams = await legacyTeamRepo.find();
+  const keepLegacyTeamNamesNorm = KEEP_LEGACY_TEAM_NAMES.map(norm);
+  const keptLegacyTeams = allLegacyTeams.filter((lt) => keepLegacyTeamNamesNorm.includes(norm(lt.name)));
+  const keptLegacyTeamIds = new Set(keptLegacyTeams.map((lt) => lt.id));
+  const wipedLegacyTeams = allLegacyTeams.filter((lt) => !keptLegacyTeamIds.has(lt.id));
+
   const matchedNames = new Set(keptTeams.map((t) => norm(t.name)));
   const unmatchedKeepNames = KEEP_TEAM_NAMES.filter((n) => !matchedNames.has(norm(n)));
+  const matchedLegacyNames = new Set(keptLegacyTeams.map((lt) => norm(lt.name)));
+  const unmatchedKeepLegacyNames = KEEP_LEGACY_TEAM_NAMES.filter((n) => !matchedLegacyNames.has(norm(n)));
 
-  const allPlayers = await playerRepo.find({ relations: ['currentTeam'] });
+  const allPlayers = await playerRepo.find({ relations: ['currentTeam', 'legacyTeam'] });
   const keepFreeAgentNamesNorm = KEEP_FREE_AGENT_NAMES.map(norm);
   const isKeptPlayer = (p: Player) =>
-    (p.currentTeam != null && keptTeamIds.has(p.currentTeam.id)) || keepFreeAgentNamesNorm.includes(norm(p.name));
+    (p.currentTeam != null && keptTeamIds.has(p.currentTeam.id)) ||
+    (p.legacyTeam != null && keptLegacyTeamIds.has(p.legacyTeam.id)) ||
+    keepFreeAgentNamesNorm.includes(norm(p.name));
   const keptPlayers = allPlayers.filter(isKeptPlayer);
   const wipedPlayers = allPlayers.filter((p) => !isKeptPlayer(p));
   const keptPlayerIds = new Set(keptPlayers.map((p) => p.id));
 
-  const allUsers = await userRepo.find({ relations: ['team', 'player'] });
+  const allUsers = await userRepo.find({ relations: ['team', 'player', 'legacyTeam'] });
   const isKeptUser = (u: UserAccount) =>
     u.role === UserRole.LEAGUE_ADMIN ||
     (u.role === UserRole.TEAM_OWNER && u.team != null && keptTeamIds.has(u.team.id)) ||
-    (u.role === UserRole.FREE_AGENT && u.player != null && keptPlayerIds.has(u.player.id));
+    (u.role === UserRole.FREE_AGENT && u.player != null && keptPlayerIds.has(u.player.id)) ||
+    (u.role === UserRole.LEGACY_TEAM_OWNER && u.legacyTeam != null && keptLegacyTeamIds.has(u.legacyTeam.id));
   const keptUsers = allUsers.filter(isKeptUser);
   const wipedUsers = allUsers.filter((u) => !isKeptUser(u));
 
@@ -77,14 +95,19 @@ async function run() {
     console.log('WARNING — these keep-list names matched NO team in the database:', unmatchedKeepNames);
   }
   console.log(`Teams to WIPE (${wipedTeams.length}):`, wipedTeams.map((t) => t.name));
+  console.log(`Legacy Teams to KEEP (${keptLegacyTeams.length}):`, keptLegacyTeams.map((lt) => lt.name));
+  if (unmatchedKeepLegacyNames.length > 0) {
+    console.log('WARNING — these keep-list legacy team names matched NO legacy team in the database:', unmatchedKeepLegacyNames);
+  }
+  console.log(`Legacy Teams to WIPE (${wipedLegacyTeams.length}):`, wipedLegacyTeams.map((lt) => lt.name));
   console.log(`Players to KEEP (${keptPlayers.length})`);
   console.log(`Players to WIPE (${wipedPlayers.length})`);
   console.log(`Accounts to KEEP (${keptUsers.length}):`, keptUsers.map((u) => `${u.email} [${u.role}]`));
   console.log(`Accounts to WIPE (${wipedUsers.length}):`, wipedUsers.map((u) => `${u.email} [${u.role}]`));
   console.log('Also wiping ALL rows in: transfer_requests, payments, approval_actions, roster_history,');
-  console.log('player_deregistration_requests, transfer_windows, password_reset_tokens, legacy_teams.');
+  console.log('player_deregistration_requests, transfer_windows, password_reset_tokens.');
 
-  if (unmatchedKeepNames.length > 0) {
+  if (unmatchedKeepNames.length > 0 || unmatchedKeepLegacyNames.length > 0) {
     console.log('\nAborting — fix the unmatched name(s) above (typo/whitespace?) before proceeding.');
     await dataSource.destroy();
     process.exit(1);
@@ -127,7 +150,10 @@ async function run() {
       await manager.delete(Team, { id: In(wipedTeamIds) });
     }
 
-    await truncateAll(LegacyTeam);
+    const wipedLegacyTeamIds = wipedLegacyTeams.map((lt) => lt.id);
+    if (wipedLegacyTeamIds.length > 0) {
+      await manager.delete(LegacyTeam, { id: In(wipedLegacyTeamIds) });
+    }
   });
 
   console.log('Wipe complete.');
