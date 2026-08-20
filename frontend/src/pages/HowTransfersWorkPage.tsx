@@ -70,8 +70,7 @@ export function HowTransfersWorkPage() {
         <ul>
           <li>Every registered player has a value, somewhere between <strong>R500 and R5,000</strong>, set by their own team.</li>
           <li>
-            You set that value when you register a player, and can only change it while a transfer window is
-            open — once the window closes, values are locked until the next one opens.
+            You set that value when you register a player, and can change it anytime — no transfer window needed.
           </li>
           <li>When you want to sign someone else's player, you and their team agree on a fee within that range.</li>
           <li>
