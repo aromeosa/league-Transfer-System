@@ -16,7 +16,6 @@ import {
 } from '../entities';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { isUniqueViolation } from '../common/db-errors.util';
-import { TransferWindowsService } from '../transfer-windows/transfer-windows.service';
 import { BusinessRules } from '../config/business-rules.config';
 import { hashIdNumber } from './id-number.util';
 
@@ -25,7 +24,6 @@ export class PlayersService {
   constructor(
     @InjectRepository(Player) private readonly playerRepo: Repository<Player>,
     @InjectDataSource() private readonly dataSource: DataSource,
-    private readonly transferWindowsService: TransferWindowsService,
   ) {}
 
   /**
@@ -44,18 +42,12 @@ export class PlayersService {
   }
 
   /**
-   * Team Owner adjusts one of their own players' value — only while a transfer window
-   * is OPEN. Once the window closes, values are locked until the next window opens
-   * (mirrors the roster-lock rule; see HowTransfersWorkPage's plain-language summary).
+   * Team Owner adjusts one of their own players' value — roster upkeep, same as adding
+   * or deregistering a player, so it works year-round rather than only while a transfer
+   * window is open. Only actually *signing* a player (a real transfer) is window-gated.
    */
   async updateValue(playerId: string, transferValue: number, actingUser: AuthenticatedUser): Promise<Player> {
     const player = await this.getOwnedPlayer(playerId, actingUser);
-
-    const openWindow = await this.transferWindowsService.getCurrent();
-    if (!openWindow) {
-      throw new ForbiddenException('Player values can only be changed while a transfer window is open');
-    }
-
     player.transferValue = transferValue;
     return this.playerRepo.save(player);
   }

@@ -137,11 +137,7 @@ export function TeamOwnerDashboard() {
 
       <section className="card">
         <h2>Roster ({team.roster?.length ?? 0})</h2>
-        <p className="muted">
-          {window_?.status === 'OPEN'
-            ? 'The transfer window is open — you can adjust player values below.'
-            : 'Player values are locked until the next transfer window opens.'}
-        </p>
+        <p className="muted">You can adjust player values below anytime — no transfer window needed.</p>
         <table>
           <thead>
             <tr>
@@ -162,12 +158,7 @@ export function TeamOwnerDashboard() {
                 </td>
                 <td>{p.originType}</td>
                 <td>
-                  <PlayerValueCell
-                    player={p}
-                    editable={window_?.status === 'OPEN'}
-                    token={token}
-                    onUpdated={refresh}
-                  />
+                  <PlayerValueCell player={p} editable token={token} onUpdated={refresh} />
                 </td>
                 <td>{p.transferCount}</td>
                 <td>{p.idVerified ? <span className="badge badge-good">✓</span> : <span className="muted">—</span>}</td>
