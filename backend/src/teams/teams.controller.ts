@@ -76,4 +76,12 @@ export class TeamsController {
   reject(@Param('id') id: string) {
     return this.teamsService.reject(id);
   }
+
+  /** Promotes every currently-REGISTERED player on this team's roster to LEGACY status. */
+  @Post(':id/mark-tournament-winner')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LEAGUE_ADMIN)
+  markTournamentWinner(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.teamsService.markTournamentWinner(id, user);
+  }
 }

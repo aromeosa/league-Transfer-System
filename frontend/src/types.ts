@@ -2,7 +2,7 @@ export type UserRole = 'TEAM_OWNER' | 'LEAGUE_ADMIN' | 'FREE_AGENT' | 'LEGACY_TE
 export type TeamStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
 export type PlayerStatus = 'FREE_AGENT' | 'REGISTERED' | 'LEGACY';
 export type PlayerPosition = 'GK' | 'DF' | 'MD' | 'ST';
-export type LegacyReason = 'QUALIFIED_MAIN_EVENT' | 'ASSISTED_QUALIFICATION' | 'QUALIFIER_WINNER';
+export type LegacyReason = 'QUALIFIED_MAIN_EVENT' | 'ASSISTED_QUALIFICATION' | 'QUALIFIER_WINNER' | 'TOURNAMENT_WINNER';
 export type RequestType = 'FREE_AGENT_SIGNING' | 'CLUB_TRANSFER' | 'LEGACY_TRANSFER';
 export type RequestStatus =
   | 'PENDING_RELEASING_APPROVAL'

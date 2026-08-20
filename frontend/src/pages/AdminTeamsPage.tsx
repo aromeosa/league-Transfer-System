@@ -6,6 +6,7 @@ import type { LegacyReason, LegacyTeam, Player, Team } from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { ADMIN_NAV } from '../layout/nav';
 import { PlayerNameCell } from '../components/PlayerNameCell';
+import { PlayerStatusBadge } from '../components/PlayerStatusBadge';
 import { TeamLogo } from '../components/TeamLogo';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
@@ -14,6 +15,7 @@ const LEGACY_REASONS: { value: LegacyReason; label: string }[] = [
   { value: 'QUALIFIED_MAIN_EVENT', label: 'Qualified — Main Event' },
   { value: 'ASSISTED_QUALIFICATION', label: 'Assisted Qualification' },
   { value: 'QUALIFIER_WINNER', label: 'Qualifier Winner' },
+  { value: 'TOURNAMENT_WINNER', label: 'Tournament Winner' },
 ];
 
 export function AdminTeamsPage() {
@@ -71,6 +73,7 @@ export function AdminTeamsPage() {
               <th>Status</th>
               <th>Players</th>
               <th>Manager</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -91,6 +94,9 @@ export function AdminTeamsPage() {
                 </td>
                 <td>{t.roster?.length ?? 0}</td>
                 <td>{t.ownerAccount?.name ?? '—'}</td>
+                <td>
+                  <MarkTournamentWinnerButton team={t} token={token} onDone={refresh} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -122,7 +128,9 @@ export function AdminTeamsPage() {
                       <PlayerNameCell player={player} />
                     </td>
                     <td>{teamName}</td>
-                    <td>{player.status}</td>
+                    <td>
+                      <PlayerStatusBadge status={player.status} />
+                    </td>
                     <td>{player.originType}</td>
                     <td>{player.transferValue != null ? `R${player.transferValue}` : '—'}</td>
                     <td>{player.idVerified ? <span className="badge badge-good">✓</span> : <span className="muted">—</span>}</td>
@@ -297,6 +305,53 @@ function DeregisterLegacyPlayerButton({
     <>
       <button disabled={busy} onClick={deregister}>
         {busy ? 'Deregistering…' : 'Deregister'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </>
+  );
+}
+
+/** Promotes every currently-REGISTERED player on this team's roster to LEGACY status
+ * at once, tagged "Tournament Winner" — a one-click alternative to adding each player
+ * to the Legacy Pool by hand after a team wins a tournament outright. */
+function MarkTournamentWinnerButton({
+  team,
+  token,
+  onDone,
+}: {
+  team: Team;
+  token: string | null;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const eligibleCount = (team.roster ?? []).filter((p) => p.status === 'REGISTERED').length;
+
+  async function markWinner() {
+    if (
+      !window.confirm(
+        `Mark "${team.name}" as tournament winner? All ${eligibleCount} registered player(s) on their roster become Legacy players.`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/teams/${team.id}/mark-tournament-winner`, {}, token);
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to mark team as tournament winner');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button className="btn-secondary" disabled={busy || eligibleCount === 0} onClick={markWinner}>
+        {busy ? 'Promoting…' : 'Mark tournament winner'}
       </button>
       {error && <p className="error">{error}</p>}
     </>
