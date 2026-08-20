@@ -170,12 +170,7 @@ export function TeamOwnerDashboard() {
         onSubmitted={refresh}
       />
 
-      <AddPlayerForm
-        rosterSize={team.roster?.length ?? 0}
-        windowOpen={window_?.status === 'OPEN'}
-        token={token}
-        onAdded={refresh}
-      />
+      <AddPlayerForm rosterSize={team.roster?.length ?? 0} token={token} onAdded={refresh} />
 
       <SubmitRequestForm
         available={available}
@@ -686,12 +681,10 @@ function DeregisterPlayerForm({
  */
 function AddPlayerForm({
   rosterSize,
-  windowOpen,
   token,
   onAdded,
 }: {
   rosterSize: number;
-  windowOpen: boolean;
   token: string | null;
   onAdded: () => void;
 }) {
@@ -702,7 +695,7 @@ function AddPlayerForm({
   const [submitting, setSubmitting] = useState(false);
 
   const atCap = rosterSize >= ROSTER_MAX;
-  const disabled = !windowOpen || atCap;
+  const disabled = atCap;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -735,10 +728,9 @@ function AddPlayerForm({
       <h2>Add a new player</h2>
       <p className="muted">
         Register a brand-new player straight onto your roster — separate from signing or requesting an existing
-        player.
+        player. Unlike a transfer, this works anytime — no transfer window needed.
       </p>
-      {!windowOpen && <p className="muted">The transfer window is closed — players cannot be added.</p>}
-      {windowOpen && atCap && (
+      {atCap && (
         <p className="muted">
           Your roster is full ({rosterSize}/{ROSTER_MAX}) — you can add players again once it drops below{' '}
           {ROSTER_MAX}.

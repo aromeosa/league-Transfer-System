@@ -64,8 +64,9 @@ export class PlayersService {
    * "Add player" — separate from the transfer-request-based "sign or request a player"
    * flow: a brand-new player (originType FREE_AGENT_ORIGIN) joins the acting owner's own
    * roster directly, with no other team/approval/actual free-agent-pool listing
-   * involved. Window-gated and roster-capped the same way every other
-   * roster-composition change is.
+   * involved. Registration onto the system is persistent year-round — only *signing*
+   * an existing player (a real transfer) is window-gated — so this stays roster-capped
+   * but not window-gated.
    */
   async addPlayer(
     name: string,
@@ -77,11 +78,6 @@ export class PlayersService {
       throw new ForbiddenException('Only a team owner may add a player to their roster');
     }
     const teamId = actingUser.teamId;
-
-    const openWindow = await this.transferWindowsService.getCurrent();
-    if (!openWindow) {
-      throw new ForbiddenException('Players can only be added while a transfer window is open');
-    }
 
     try {
       return await this.dataSource.transaction(async (manager) => {
