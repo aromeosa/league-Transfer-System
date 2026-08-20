@@ -29,27 +29,41 @@ export function TeamOwnerDashboard() {
     let cancelled = false;
 
     async function load() {
+      // The roster is the one thing this dashboard can't do without — fetched and
+      // handled on its own so a hiccup in any of the secondary calls below (transfer
+      // window status, available players, requests, deregistrations) can never blank
+      // out the roster along with it. Those are best-effort: each falls back to an
+      // empty value on failure instead of failing the whole page.
+      let teamRes: Team;
       try {
-        const [teamRes, windowRes, freeAgents, registered, legacy, requestsRes, deregistrationsRes] =
-          await Promise.all([
-            api.get<Team>(`/teams/${user!.teamId}`, token),
-            api.get<TransferWindow | null>('/transfer-windows/current', token),
-            api.get<Player[]>('/players?status=FREE_AGENT', token),
-            api.get<Player[]>('/players?status=REGISTERED', token),
-            api.get<Player[]>('/players?status=LEGACY', token),
-            api.get<TransferRequest[]>('/transfer-requests', token),
-            api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
-          ]);
+        teamRes = await api.get<Team>(`/teams/${user!.teamId}`, token);
         if (cancelled) return;
         setTeam(teamRes);
-        setWindow(windowRes);
-        const myPlayerIds = new Set(teamRes.roster?.map((p) => p.id));
-        setAvailable([...freeAgents, ...registered, ...legacy].filter((p) => !myPlayerIds.has(p.id)));
-        setRequests(requestsRes);
-        setDeregistrations(deregistrationsRes);
+        setError(null);
       } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
+        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load your team');
+        return;
       }
+
+      const [windowRes, freeAgentsRes, registeredRes, legacyRes, requestsRes, deregistrationsRes] =
+        await Promise.allSettled([
+          api.get<TransferWindow | null>('/transfer-windows/current', token),
+          api.get<Player[]>('/players?status=FREE_AGENT', token),
+          api.get<Player[]>('/players?status=REGISTERED', token),
+          api.get<Player[]>('/players?status=LEGACY', token),
+          api.get<TransferRequest[]>('/transfer-requests', token),
+          api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+        ]);
+      if (cancelled) return;
+
+      setWindow(windowRes.status === 'fulfilled' ? windowRes.value : null);
+      const myPlayerIds = new Set(teamRes.roster?.map((p) => p.id));
+      const freeAgents = freeAgentsRes.status === 'fulfilled' ? freeAgentsRes.value : [];
+      const registered = registeredRes.status === 'fulfilled' ? registeredRes.value : [];
+      const legacy = legacyRes.status === 'fulfilled' ? legacyRes.value : [];
+      setAvailable([...freeAgents, ...registered, ...legacy].filter((p) => !myPlayerIds.has(p.id)));
+      setRequests(requestsRes.status === 'fulfilled' ? requestsRes.value : []);
+      setDeregistrations(deregistrationsRes.status === 'fulfilled' ? deregistrationsRes.value : []);
     }
     load();
     return () => {
