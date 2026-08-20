@@ -54,6 +54,9 @@ export interface Player {
   createdAt: string;
   /** Whether an ID/passport number is on file (hashed) — the number itself is never exposed. */
   idVerified: boolean;
+  /** True only for a player who self-registered through the public Free Agent signup
+   *  form — false for one a team/admin added directly, even with the same originType. */
+  hasAccount: boolean;
 }
 
 export interface Team {
@@ -63,6 +66,8 @@ export interface Team {
   logoUrl?: string | null;
   roster?: Player[];
   ownerAccount?: { id: string; name: string; email: string };
+  createdAt: string;
+  decidedAt?: string | null;
 }
 
 export interface TransferWindow {

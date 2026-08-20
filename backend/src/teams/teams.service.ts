@@ -218,6 +218,7 @@ export class TeamsService {
       throw new ConflictException(`Team is not pending approval (status: ${team.status})`);
     }
     team.status = next;
+    team.decidedAt = new Date();
     await this.teamRepo.save(team);
     return this.getTeam(teamId);
   }

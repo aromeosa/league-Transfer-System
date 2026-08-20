@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { api, ApiError } from '../api/client';
-import type { DeregistrationReason, Player, PlayerDeregistrationRequest, RequestStatus, TransferRequest } from '../types';
+import { api } from '../api/client';
+import type {
+  DeregistrationReason,
+  LegacyModeRequest,
+  LegacyTeam,
+  Player,
+  PlayerDeregistrationRequest,
+  RequestStatus,
+  Team,
+  TransferRequest,
+} from '../types';
 import { DashboardShell } from '../layout/DashboardShell';
 import { ADMIN_NAV } from '../layout/nav';
 
@@ -47,6 +56,9 @@ function buildTimeline(
   requests: TransferRequest[],
   players: Player[],
   deregistrations: PlayerDeregistrationRequest[],
+  teams: Team[],
+  legacyTeams: LegacyTeam[],
+  legacyModeRequests: LegacyModeRequest[],
 ): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   for (const r of requests) {
@@ -118,6 +130,88 @@ function buildTimeline(
     }
   }
 
+  // A player who actually self-registered through the public Free Agent signup form —
+  // distinct from one a team/admin added directly (see Player.hasAccount).
+  for (const p of players) {
+    if (!p.hasAccount) continue;
+    events.push({
+      id: `${p.id}-signed-up`,
+      at: p.createdAt,
+      label: 'Free agent signed up',
+      tone: 'good',
+      player: p.name,
+      from: '—',
+      to: '—',
+      fee: '—',
+    });
+  }
+
+  for (const t of teams) {
+    // A team the admin created directly never goes through decide(), so decidedAt stays
+    // null forever for it — that's the signal a self-registered team went through
+    // approval versus one that was active immediately.
+    events.push({
+      id: `${t.id}-registered`,
+      at: t.createdAt,
+      label: t.decidedAt || t.status === 'PENDING_APPROVAL' ? 'Team registered' : 'Team created by admin',
+      tone: 'good',
+      player: '—',
+      from: '—',
+      to: t.name,
+      fee: '—',
+    });
+    if (t.decidedAt) {
+      events.push({
+        id: `${t.id}-decided`,
+        at: t.decidedAt,
+        label: t.status === 'ACTIVE' ? 'Team approved' : 'Team rejected',
+        tone: t.status === 'ACTIVE' ? 'good' : 'bad',
+        player: '—',
+        from: '—',
+        to: t.name,
+        fee: '—',
+      });
+    }
+  }
+
+  for (const lt of legacyTeams) {
+    events.push({
+      id: `${lt.id}-added`,
+      at: lt.createdAt,
+      label: 'Legacy team added',
+      tone: 'good',
+      player: '—',
+      from: '—',
+      to: lt.name,
+      fee: '—',
+    });
+  }
+
+  for (const r of legacyModeRequests) {
+    events.push({
+      id: `${r.id}-requested`,
+      at: r.createdAt,
+      label: 'Legacy mode requested',
+      tone: 'pending',
+      player: '—',
+      from: '—',
+      to: r.team.name,
+      fee: '—',
+    });
+    if (r.decidedAt) {
+      events.push({
+        id: `${r.id}-decided`,
+        at: r.decidedAt,
+        label: r.status === 'APPROVED' ? 'Legacy mode approved' : 'Legacy mode rejected',
+        tone: r.status === 'APPROVED' ? 'good' : 'bad',
+        player: '—',
+        from: '—',
+        to: r.team.name,
+        fee: '—',
+      });
+    }
+  }
+
   return events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 }
 
@@ -126,32 +220,46 @@ export function AdminEventsPage() {
   const [requests, setRequests] = useState<TransferRequest[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [deregistrations, setDeregistrations] = useState<PlayerDeregistrationRequest[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [legacyTeams, setLegacyTeams] = useState<LegacyTeam[]>([]);
+  const [legacyModeRequests, setLegacyModeRequests] = useState<LegacyModeRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      api.get<TransferRequest[]>('/transfer-requests', token),
-      api.get<Player[]>('/players', token),
-      api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
-    ])
-      .then(([requestsRes, playersRes, deregistrationsRes]) => {
-        if (cancelled) return;
-        setRequests(requestsRes);
-        setPlayers(playersRes);
-        setDeregistrations(deregistrationsRes);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load events');
-      });
+    async function load() {
+      // Each source feeds its own slice of the timeline — Promise.allSettled means a
+      // hiccup in any one of them can't blank the whole event log, it just shows
+      // everything else with that section's events missing.
+      const [requestsRes, playersRes, deregistrationsRes, teamsRes, legacyTeamsRes, legacyModeRes] =
+        await Promise.allSettled([
+          api.get<TransferRequest[]>('/transfer-requests', token),
+          api.get<Player[]>('/players', token),
+          api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+          api.get<Team[]>('/teams', token),
+          api.get<LegacyTeam[]>('/legacy-teams', token),
+          api.get<LegacyModeRequest[]>('/legacy-mode-requests', token),
+        ]);
+      if (cancelled) return;
+      setRequests(requestsRes.status === 'fulfilled' ? requestsRes.value : []);
+      setPlayers(playersRes.status === 'fulfilled' ? playersRes.value : []);
+      setDeregistrations(deregistrationsRes.status === 'fulfilled' ? deregistrationsRes.value : []);
+      setTeams(teamsRes.status === 'fulfilled' ? teamsRes.value : []);
+      setLegacyTeams(legacyTeamsRes.status === 'fulfilled' ? legacyTeamsRes.value : []);
+      setLegacyModeRequests(legacyModeRes.status === 'fulfilled' ? legacyModeRes.value : []);
+      if ([requestsRes, playersRes, deregistrationsRes, teamsRes, legacyTeamsRes, legacyModeRes].every((r) => r.status === 'rejected')) {
+        setError('Failed to load events');
+      }
+    }
+    load();
     return () => {
       cancelled = true;
     };
   }, [token]);
 
   const timeline = useMemo(
-    () => buildTimeline(requests, players, deregistrations),
-    [requests, players, deregistrations],
+    () => buildTimeline(requests, players, deregistrations, teams, legacyTeams, legacyModeRequests),
+    [requests, players, deregistrations, teams, legacyTeams, legacyModeRequests],
   );
 
   return (

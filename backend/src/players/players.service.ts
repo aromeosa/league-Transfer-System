@@ -36,7 +36,7 @@ export class PlayersService {
         ...(status ? { status } : {}),
         ...(unattached ? { currentTeam: IsNull() } : {}),
       },
-      relations: ['currentTeam', 'legacyTeam'],
+      relations: ['currentTeam', 'legacyTeam', 'account'],
       order: { name: 'ASC' },
     });
   }
