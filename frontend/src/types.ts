@@ -102,6 +102,18 @@ export interface PlayerDeregistrationRequest {
   decidedAt: string | null;
 }
 
+export type LegacyModeRequestStatus = 'PENDING_LEAGUE_APPROVAL' | 'APPROVED' | 'REJECTED';
+
+export interface LegacyModeRequest {
+  id: string;
+  team: Team;
+  requestedByUser: { id: string; name: string; email: string };
+  status: LegacyModeRequestStatus;
+  decisionNotes?: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
 export interface Payment {
   id: string;
   totalFee: number;

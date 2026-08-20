@@ -2,7 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { DeregistrationReason, Player, PlayerDeregistrationRequest, RequestType, Team, TransferRequest, TransferWindow } from '../types';
+import type {
+  DeregistrationReason,
+  LegacyModeRequest,
+  Player,
+  PlayerDeregistrationRequest,
+  RequestType,
+  Team,
+  TransferRequest,
+  TransferWindow,
+} from '../types';
 import { StatTile } from '../components/StatTile';
 import { DashboardShell } from '../layout/DashboardShell';
 import { TEAM_OWNER_NAV } from '../layout/nav';
@@ -20,6 +29,7 @@ export function TeamOwnerDashboard() {
   const [available, setAvailable] = useState<Player[]>([]);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
   const [deregistrations, setDeregistrations] = useState<PlayerDeregistrationRequest[]>([]);
+  const [legacyModeRequests, setLegacyModeRequests] = useState<LegacyModeRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
@@ -45,7 +55,7 @@ export function TeamOwnerDashboard() {
         return;
       }
 
-      const [windowRes, freeAgentsRes, registeredRes, legacyRes, requestsRes, deregistrationsRes] =
+      const [windowRes, freeAgentsRes, registeredRes, legacyRes, requestsRes, deregistrationsRes, legacyModeRes] =
         await Promise.allSettled([
           api.get<TransferWindow | null>('/transfer-windows/current', token),
           api.get<Player[]>('/players?status=FREE_AGENT', token),
@@ -53,6 +63,7 @@ export function TeamOwnerDashboard() {
           api.get<Player[]>('/players?status=LEGACY', token),
           api.get<TransferRequest[]>('/transfer-requests', token),
           api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+          api.get<LegacyModeRequest[]>('/legacy-mode-requests', token),
         ]);
       if (cancelled) return;
 
@@ -64,6 +75,7 @@ export function TeamOwnerDashboard() {
       setAvailable([...freeAgents, ...registered, ...legacy].filter((p) => !myPlayerIds.has(p.id)));
       setRequests(requestsRes.status === 'fulfilled' ? requestsRes.value : []);
       setDeregistrations(deregistrationsRes.status === 'fulfilled' ? deregistrationsRes.value : []);
+      setLegacyModeRequests(legacyModeRes.status === 'fulfilled' ? legacyModeRes.value : []);
     }
     load();
     return () => {
@@ -167,6 +179,13 @@ export function TeamOwnerDashboard() {
           </tbody>
         </table>
       </section>
+
+      <RequestLegacyModeCard
+        roster={team.roster ?? []}
+        requests={legacyModeRequests}
+        token={token}
+        onSubmitted={refresh}
+      />
 
       <DeregisterPlayerForm
         roster={team.roster ?? []}
@@ -557,6 +576,90 @@ function PlayerPicker({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * A team-initiated request for the whole roster to be promoted to Legacy status — the
+ * same outcome as a League Admin directly marking the team a tournament winner, but
+ * gated on the admin's approval. Nothing changes until it's decided; a rejection
+ * leaves every player exactly as they were.
+ */
+function RequestLegacyModeCard({
+  roster,
+  requests,
+  token,
+  onSubmitted,
+}: {
+  roster: Player[];
+  requests: LegacyModeRequest[];
+  token: string | null;
+  onSubmitted: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const hasPending = requests.some((r) => r.status === 'PENDING_LEAGUE_APPROVAL');
+  const registeredCount = roster.filter((p) => p.status === 'REGISTERED').length;
+  const recent = [...requests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  async function submit() {
+    if (!window.confirm('Request legacy mode for your whole team? If the League Admin approves, every registered player on your roster becomes a Legacy player.')) {
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+    try {
+      await api.post('/legacy-mode-requests', {}, token);
+      onSubmitted();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to submit legacy mode request');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2>Request legacy mode</h2>
+      <p className="muted">
+        Won a tournament outright? Request legacy mode to have your whole registered roster promoted to Legacy
+        status at once — requires League Admin approval before it takes effect.
+      </p>
+      {registeredCount === 0 ? (
+        <p className="muted">You have no registered players to promote.</p>
+      ) : (
+        <button type="button" disabled={hasPending || submitting} onClick={submit}>
+          {submitting ? 'Submitting…' : hasPending ? 'Awaiting League Admin decision' : 'Request legacy mode'}
+        </button>
+      )}
+      {error && <p className="error">{error}</p>}
+
+      {recent.length > 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>Requested</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recent.map((r) => (
+              <tr key={r.id}>
+                <td>{new Date(r.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <span
+                    className={`badge ${r.status === 'APPROVED' ? 'badge-good' : r.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}
+                  >
+                    {r.status === 'PENDING_LEAGUE_APPROVAL' ? 'Awaiting League Admin' : r.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 
