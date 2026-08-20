@@ -25,7 +25,8 @@
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:run:prod": "node ./node_modules/typeorm/cli.js -d dist/config/data-source.js migration:run",
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
-    "backup": "ts-node -r tsconfig-paths/register src/backup-data.ts"
+    "backup": "ts-node -r tsconfig-paths/register src/backup-data.ts",
+    "wipe": "ts-node -r tsconfig-paths/register src/wipe-data.ts"
   },
   "dependencies": {
     "@nestjs/cli": "^10.0.0",
