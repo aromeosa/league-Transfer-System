@@ -796,6 +796,37 @@ button + button {
   margin-top: 0.35rem;
 }
 
+.team-roster-row-toggle {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.team-roster-row-toggle svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.team-roster-row-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.team-roster-expanded {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
 /* ---------- Player picker (search / browse-by-team combobox) ---------- */
 
 .player-picker {

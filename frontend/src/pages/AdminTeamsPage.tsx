@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
@@ -9,6 +9,7 @@ import { PlayerNameCell } from '../components/PlayerNameCell';
 import { TeamLogo } from '../components/TeamLogo';
 import { FreeAgentsTable } from '../components/FreeAgentsTable';
 import { CollapsibleList } from '../components/CollapsibleList';
+import { ChevronDownIcon } from '../components/icons';
 
 const LEGACY_REASONS: { value: LegacyReason; label: string }[] = [
   { value: 'QUALIFIED_MAIN_EVENT', label: 'Qualified — Main Event' },
@@ -25,6 +26,15 @@ export function AdminTeamsPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
+  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(new Set());
+  function toggleTeamRoster(id: string) {
+    setExpandedTeamIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -76,28 +86,57 @@ export function AdminTeamsPage() {
             </tr>
           </thead>
           <tbody>
-            {teams.map((t) => (
-              <tr key={t.id}>
-                <td>
-                  <span className="team-name-cell">
-                    <TeamLogo logoUrl={t.logoUrl} />
-                    {t.name}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    className={`badge ${t.status === 'ACTIVE' ? 'badge-good' : t.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}
-                  >
-                    {t.status}
-                  </span>
-                </td>
-                <td>{t.roster?.length ?? 0}</td>
-                <td>{t.ownerAccount?.name ?? '—'}</td>
-                <td>
-                  <MarkTournamentWinnerButton team={t} token={token} onDone={refresh} />
-                </td>
-              </tr>
-            ))}
+            {teams.map((t) => {
+              const expanded = expandedTeamIds.has(t.id);
+              return (
+                <Fragment key={t.id}>
+                  <tr>
+                    <td>
+                      <button
+                        type="button"
+                        className="team-name-cell team-roster-row-toggle"
+                        onClick={() => toggleTeamRoster(t.id)}
+                        aria-expanded={expanded}
+                        aria-label={`${expanded ? 'Hide' : 'Show'} ${t.name}'s roster`}
+                      >
+                        <TeamLogo logoUrl={t.logoUrl} />
+                        {t.name}
+                        <ChevronDownIcon />
+                      </button>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${t.status === 'ACTIVE' ? 'badge-good' : t.status === 'REJECTED' ? 'badge-bad' : 'badge-pending'}`}
+                      >
+                        {t.status}
+                      </span>
+                    </td>
+                    <td>{t.roster?.length ?? 0}</td>
+                    <td>{t.ownerAccount?.name ?? '—'}</td>
+                    <td>
+                      <MarkTournamentWinnerButton team={t} token={token} onDone={refresh} />
+                    </td>
+                  </tr>
+                  {expanded && (
+                    <tr>
+                      <td colSpan={5}>
+                        {(t.roster?.length ?? 0) === 0 ? (
+                          <p className="muted">No players on this roster.</p>
+                        ) : (
+                          <ul className="team-roster-expanded">
+                            {t.roster!.map((p) => (
+                              <li key={p.id}>
+                                <PlayerNameCell player={p} />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </section>
