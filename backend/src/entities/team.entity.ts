@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserAccount } from './user-account.entity';
 import { Player } from './player.entity';
 import { TeamStatus } from './enums';
@@ -24,4 +24,12 @@ export class Team {
 
   @OneToMany(() => Player, (player) => player.currentTeam)
   roster?: Player[];
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  /** Set when a League Admin approves/rejects a self-registered team (§ TeamsService.decide)
+   *  — stays null for a team the admin created directly, since that skips approval entirely. */
+  @Column({ name: 'decided_at', type: 'timestamptz', nullable: true })
+  decidedAt?: Date | null;
 }

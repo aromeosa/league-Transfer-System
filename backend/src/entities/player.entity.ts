@@ -62,8 +62,18 @@ export class Player {
   avatarUrl?: string | null;
 
   /** Inverse side — the owning FK (`player_id`) lives on UserAccount. Free Agents only. */
+  @Exclude()
   @OneToOne(() => UserAccount, (account) => account.player)
   account?: UserAccount | null;
+
+  /** True only for a player who actually self-registered through the public Free Agent
+   *  signup form — a team/admin adding a brand-new player directly never creates a
+   *  login account, even though both share originType FREE_AGENT_ORIGIN. Lets the admin
+   *  events timeline tell "someone signed up" apart from "a team registered a player". */
+  @Expose()
+  get hasAccount(): boolean {
+    return !!this.account;
+  }
 
   /**
    * One-way HMAC of a national ID/passport number (never the raw value — see
