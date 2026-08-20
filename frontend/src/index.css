@@ -478,6 +478,41 @@ select:focus {
   outline-offset: 1px;
 }
 
+.password-input-wrap {
+  position: relative;
+  display: flex;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+
+.password-input-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2.4rem;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-input-toggle:hover {
+  color: var(--text);
+}
+
+.password-input-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 button {
   font: inherit;
   font-weight: 600;
