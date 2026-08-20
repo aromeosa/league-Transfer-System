@@ -21,15 +21,25 @@ export function FreeAgentDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.get<Player>('/players/me', token), api.get<TransferRequest[]>('/transfer-requests', token)])
-      .then(([playerRes, requestsRes]) => {
+
+    // The player's own profile is the one thing this dashboard can't do without —
+    // fetched on its own so a hiccup in the (best-effort) requests call can never
+    // blank out the profile along with it.
+    async function load() {
+      try {
+        const playerRes = await api.get<Player>('/players/me', token);
         if (cancelled) return;
         setPlayer(playerRes);
-        setRequests(requestsRes);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load your dashboard');
-      });
+        setError(null);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load your profile');
+        return;
+      }
+
+      const requestsRes = await api.get<TransferRequest[]>('/transfer-requests', token).catch(() => null);
+      if (!cancelled && requestsRes) setRequests(requestsRes);
+    }
+    load();
     return () => {
       cancelled = true;
     };
