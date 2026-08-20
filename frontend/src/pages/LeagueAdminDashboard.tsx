@@ -1,7 +1,15 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api, ApiError } from '../api/client';
-import type { DeregistrationReason, Player, PlayerDeregistrationRequest, Team, TransferRequest, TransferWindow } from '../types';
+import type {
+  DeregistrationReason,
+  LegacyModeRequest,
+  Player,
+  PlayerDeregistrationRequest,
+  Team,
+  TransferRequest,
+  TransferWindow,
+} from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge';
 import { PaymentTimeline } from '../components/PaymentTimeline';
@@ -16,6 +24,7 @@ export function LeagueAdminDashboard() {
   const [window_, setWindow] = useState<TransferWindow | null>(null);
   const [requests, setRequests] = useState<TransferRequest[]>([]);
   const [deregistrations, setDeregistrations] = useState<PlayerDeregistrationRequest[]>([]);
+  const [legacyModeRequests, setLegacyModeRequests] = useState<LegacyModeRequest[]>([]);
   const [pendingTeams, setPendingTeams] = useState<Team[]>([]);
   const [activeTeamCount, setActiveTeamCount] = useState(0);
   const [playerCount, setPlayerCount] = useState(0);
@@ -38,11 +47,12 @@ export function LeagueAdminDashboard() {
       // pending teams, stat tiles) — Promise.allSettled means a hiccup in any one of
       // these can never blank the whole dashboard behind a generic error; each just
       // falls back to an empty value on failure.
-      const [windowRes, requestsRes, deregistrationsRes, pendingTeamsRes, activeTeamsRes, playersRes] =
+      const [windowRes, requestsRes, deregistrationsRes, legacyModeRes, pendingTeamsRes, activeTeamsRes, playersRes] =
         await Promise.allSettled([
           api.get<TransferWindow | null>('/transfer-windows/current', token),
           api.get<TransferRequest[]>('/transfer-requests', token),
           api.get<PlayerDeregistrationRequest[]>('/player-deregistrations', token),
+          api.get<LegacyModeRequest[]>('/legacy-mode-requests', token),
           api.get<Team[]>('/teams?status=PENDING_APPROVAL', token),
           api.get<Team[]>('/teams?status=ACTIVE', token),
           api.get<Player[]>('/players', token),
@@ -51,6 +61,7 @@ export function LeagueAdminDashboard() {
       setWindow(windowRes.status === 'fulfilled' ? windowRes.value : null);
       setRequests(requestsRes.status === 'fulfilled' ? requestsRes.value : []);
       setDeregistrations(deregistrationsRes.status === 'fulfilled' ? deregistrationsRes.value : []);
+      setLegacyModeRequests(legacyModeRes.status === 'fulfilled' ? legacyModeRes.value : []);
       setPendingTeams(pendingTeamsRes.status === 'fulfilled' ? pendingTeamsRes.value : []);
       setActiveTeamCount(activeTeamsRes.status === 'fulfilled' ? activeTeamsRes.value.length : 0);
       setPlayerCount(playersRes.status === 'fulfilled' ? playersRes.value.length : 0);
@@ -63,6 +74,7 @@ export function LeagueAdminDashboard() {
 
   const pendingLeague = requests.filter((r) => r.status === 'PENDING_LEAGUE_APPROVAL');
   const pendingDeregistrations = deregistrations.filter((d) => d.status === 'PENDING_LEAGUE_APPROVAL');
+  const pendingLegacyModeRequests = legacyModeRequests.filter((r) => r.status === 'PENDING_LEAGUE_APPROVAL');
 
   return (
     <DashboardShell
@@ -76,6 +88,7 @@ export function LeagueAdminDashboard() {
         <StatTile icon={<UserCogIcon />} label="Pending approvals" value={pendingTeams.length} />
         <StatTile icon={<TransferIcon />} label="Awaiting League decision" value={pendingLeague.length} />
         <StatTile icon={<UsersIcon />} label="Pending deregistrations" value={pendingDeregistrations.length} />
+        <StatTile icon={<UsersIcon />} label="Pending legacy mode requests" value={pendingLegacyModeRequests.length} />
         <StatTile icon={<TableIcon />} label="Total players" value={playerCount} />
       </div>
 
@@ -112,6 +125,17 @@ export function LeagueAdminDashboard() {
         ) : (
           pendingDeregistrations.map((d) => (
             <DeregistrationDecisionRow key={d.id} request={d} token={token} onDecided={refresh} />
+          ))
+        )}
+      </section>
+
+      <section className="card">
+        <h2>Pending legacy mode requests</h2>
+        {pendingLegacyModeRequests.length === 0 ? (
+          <p className="muted">Nothing pending.</p>
+        ) : (
+          pendingLegacyModeRequests.map((r) => (
+            <LegacyModeDecisionRow key={r.id} request={r} token={token} onDecided={refresh} />
           ))
         )}
       </section>
@@ -330,6 +354,53 @@ function DeregistrationDecisionRow({
           Reject
         </button>
       </span>
+    </div>
+  );
+}
+
+/** Approving promotes every registered player on the team's roster to Legacy status at
+ * once (same effect as directly marking them a tournament winner); rejecting leaves
+ * the roster exactly as it was. */
+function LegacyModeDecisionRow({
+  request,
+  token,
+  onDecided,
+}: {
+  request: LegacyModeRequest;
+  token: string | null;
+  onDecided: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function decide(decision: 'APPROVE' | 'REJECT') {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/legacy-mode-requests/${request.id}/decision`, { decision }, token);
+      onDecided();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to record decision');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="request-row">
+      <span>
+        <strong>{request.team.name}</strong> requests legacy mode for their whole roster — requested by{' '}
+        {request.requestedByUser.name}
+      </span>
+      <span>
+        <button disabled={busy} onClick={() => decide('APPROVE')}>
+          Approve
+        </button>
+        <button disabled={busy} onClick={() => decide('REJECT')}>
+          Reject
+        </button>
+      </span>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

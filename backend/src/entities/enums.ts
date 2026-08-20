@@ -115,3 +115,11 @@ export enum DeregistrationStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
 }
+
+/** A team requesting the same outcome as TeamsService.markTournamentWinner, but
+ *  needing League Admin sign-off first rather than the admin declaring it directly. */
+export enum LegacyModeRequestStatus {
+  PENDING_LEAGUE_APPROVAL = 'PENDING_LEAGUE_APPROVAL',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}

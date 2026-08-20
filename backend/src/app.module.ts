@@ -11,6 +11,7 @@ import { PaymentGatewayModule } from './payment-gateway/payment-gateway.module';
 import { TransferRequestsModule } from './transfer-requests/transfer-requests.module';
 import { PlayerDeregistrationsModule } from './player-deregistrations/player-deregistrations.module';
 import { LegacyTeamsModule } from './legacy-teams/legacy-teams.module';
+import { LegacyModeRequestsModule } from './legacy-mode-requests/legacy-mode-requests.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LegacyTeamsModule } from './legacy-teams/legacy-teams.module';
     TransferRequestsModule,
     PlayerDeregistrationsModule,
     LegacyTeamsModule,
+    LegacyModeRequestsModule,
   ],
 })
 export class AppModule {}

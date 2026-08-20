@@ -114,18 +114,27 @@ export class TeamsService {
   }
 
   /**
-   * League Admin declares a team the outright winner of a tournament — every currently
-   * REGISTERED player on its roster is promoted to LEGACY at once, tagged with the new
-   * TOURNAMENT_WINNER reason. A legacy player must belong to a LegacyTeam (§ admin-curated
-   * pool rule), so this finds-or-creates a LegacyTeam matching the winning team's name
-   * (case/whitespace-insensitive, since real team names in this system carry stray
-   * whitespace) rather than requiring the admin to add one separately first.
+   * League Admin declares a team the outright winner of a tournament, right now, no
+   * approval step — the direct counterpart to a team *requesting* the same outcome via
+   * LegacyModeRequestsService (§ legacy mode), which does need admin sign-off.
    */
   async markTournamentWinner(teamId: string, actingUser: AuthenticatedUser): Promise<Team> {
     if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
       throw new ForbiddenException('Only a League Admin may declare a tournament winner');
     }
+    return this.promoteTeamToLegacy(teamId);
+  }
 
+  /**
+   * Every currently-REGISTERED player on this team's roster is promoted to LEGACY at
+   * once, tagged TOURNAMENT_WINNER. A legacy player must belong to a LegacyTeam (§
+   * admin-curated pool rule), so this finds-or-creates a LegacyTeam matching the team's
+   * name (case/whitespace-insensitive, since real team names in this system carry stray
+   * whitespace) rather than requiring one to be added separately first. Shared by the
+   * direct admin action above and an approved legacy-mode request — same end state
+   * either way, only the path to get there (and who needs to sign off) differs.
+   */
+  async promoteTeamToLegacy(teamId: string): Promise<Team> {
     const team = await this.teamRepo.findOne({ where: { id: teamId }, relations: ['roster'] });
     if (!team) {
       throw new NotFoundException('Team not found');
