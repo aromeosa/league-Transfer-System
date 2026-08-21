@@ -18,6 +18,7 @@ export function FreeAgentRegisterPage() {
   const { user, logout } = useAuth();
   const [name, setName] = useState('');
   const [position, setPosition] = useState<PlayerPosition | ''>('');
+  const [location, setLocation] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [idNumber, setIdNumber] = useState('');
@@ -34,6 +35,7 @@ export function FreeAgentRegisterPage() {
       await api.post('/players/free-agents', {
         name,
         position,
+        location,
         email,
         password,
         ...(idNumber ? { idNumber } : {}),
@@ -89,6 +91,15 @@ export function FreeAgentRegisterPage() {
                     </option>
                   ))}
                 </select>
+              </label>
+              <label>
+                Location
+                <input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Johannesburg"
+                  required
+                />
               </label>
               <label>
                 Email

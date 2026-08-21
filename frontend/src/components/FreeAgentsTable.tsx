@@ -19,6 +19,7 @@ export function FreeAgentsTable({
             <tr>
               <th>Player</th>
               <th>Position</th>
+              <th>Location</th>
             </tr>
           </thead>
           <tbody>
@@ -28,6 +29,7 @@ export function FreeAgentsTable({
                   <PlayerNameCell player={p} />
                 </td>
                 <td>{p.position ?? '—'}</td>
+                <td>{p.location ?? '—'}</td>
               </tr>
             ))}
           </tbody>

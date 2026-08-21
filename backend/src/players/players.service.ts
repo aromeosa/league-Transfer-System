@@ -190,6 +190,7 @@ export class PlayersService {
   async registerFreeAgent(
     name: string,
     position: PlayerPosition,
+    location: string,
     email: string,
     password: string,
     idNumber?: string,
@@ -210,6 +211,7 @@ export class PlayersService {
           manager.create(Player, {
             name,
             position,
+            location,
             status: PlayerStatus.FREE_AGENT,
             originType: PlayerOrigin.FREE_AGENT_ORIGIN,
             idNumberHash: idNumber ? hashIdNumber(idNumber) : null,
