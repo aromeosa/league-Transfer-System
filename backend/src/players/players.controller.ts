@@ -9,6 +9,7 @@ import { PlayerStatus, UserRole } from '../entities';
 import { PlayersService } from './players.service';
 import { UpdatePlayerValueDto } from './dto/update-player-value.dto';
 import { UpdatePlayerPhotoDto } from './dto/update-player-photo.dto';
+import { UpdatePlayerLocationDto } from './dto/update-player-location.dto';
 import { RegisterFreeAgentDto } from './dto/register-free-agent.dto';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { CreateLegacyPlayerDto } from './dto/create-legacy-player.dto';
@@ -87,6 +88,14 @@ export class PlayersController {
   @Roles(UserRole.FREE_AGENT)
   updateOwnPhoto(@Body() dto: UpdatePlayerPhotoDto, @CurrentUser() user: AuthenticatedUser) {
     return this.playersService.updateOwnPhoto(dto.photoDataUrl, user);
+  }
+
+  /** Free Agent updates where they're based — self-service, works anytime. */
+  @Patch('me/location')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.FREE_AGENT)
+  updateOwnLocation(@Body() dto: UpdatePlayerLocationDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.updateOwnLocation(dto.location, user);
   }
 
   @Patch(':id/value')

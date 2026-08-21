@@ -263,6 +263,13 @@ export class PlayersService {
     return this.playerRepo.save(player);
   }
 
+  /** Free Agent updates where they're based — self-service, same as their photo. */
+  async updateOwnLocation(location: string, actingUser: AuthenticatedUser): Promise<Player> {
+    const player = await this.getOwnPlayer(actingUser);
+    player.location = location;
+    return this.playerRepo.save(player);
+  }
+
   private async getOwnPlayer(actingUser: AuthenticatedUser): Promise<Player> {
     if (actingUser.role !== UserRole.FREE_AGENT || !actingUser.playerId) {
       throw new ForbiddenException('Only a Free Agent may manage their own profile');

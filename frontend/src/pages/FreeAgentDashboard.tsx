@@ -60,7 +60,10 @@ export function FreeAgentDashboard() {
       <section className="card">
         <h2>My profile</h2>
         {player ? (
-          <OwnProfilePhoto player={player} token={token} onUpdated={refresh} />
+          <>
+            <OwnProfilePhoto player={player} token={token} onUpdated={refresh} />
+            <OwnLocationEditor player={player} token={token} onUpdated={refresh} />
+          </>
         ) : (
           <p className="muted">Loading…</p>
         )}
@@ -142,6 +145,82 @@ function OwnProfilePhoto({
         )}
       </span>
     </span>
+  );
+}
+
+/** Free Agent self-service location edit — shown in the Free Agents pool table so
+ * teams browsing it can see where a player is based. */
+function OwnLocationEditor({
+  player,
+  token,
+  onUpdated,
+}: {
+  player: Player;
+  token: string | null;
+  onUpdated: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [location, setLocation] = useState(player.location ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!editing) {
+    return (
+      <p className="muted">
+        Location: {player.location ?? 'Not set'}{' '}
+        <button
+          type="button"
+          className="btn-secondary btn-small"
+          onClick={() => {
+            setLocation(player.location ?? '');
+            setError(null);
+            setEditing(true);
+          }}
+        >
+          Edit
+        </button>
+        {error && (
+          <>
+            <br />
+            <span className="error">{error}</span>
+          </>
+        )}
+      </p>
+    );
+  }
+
+  async function save() {
+    if (!location.trim()) return;
+    setError(null);
+    setSaving(true);
+    try {
+      await api.patch('/players/me/location', { location: location.trim() }, token);
+      setEditing(false);
+      onUpdated();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update location');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <p className="muted">
+      Location:{' '}
+      <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Johannesburg" />{' '}
+      <button type="button" disabled={saving || !location.trim()} onClick={save}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>{' '}
+      <button type="button" className="btn-secondary btn-small" disabled={saving} onClick={() => setEditing(false)}>
+        Cancel
+      </button>
+      {error && (
+        <>
+          <br />
+          <span className="error">{error}</span>
+        </>
+      )}
+    </p>
   );
 }
 
