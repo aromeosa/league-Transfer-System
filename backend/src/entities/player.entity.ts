@@ -42,6 +42,11 @@ export class Player {
   @Column({ type: 'enum', enum: PlayerPosition, nullable: true })
   position?: PlayerPosition | null;
 
+  /** Where the player is based — collected at Free Agent self-signup so teams can see
+   *  it in the pool; nullable for players registered another way. */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  location?: string | null;
+
   /** R500–R5,000 (§1.3) — nullable until the current team assigns one. */
   @Column({
     name: 'transfer_value',

@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { PlayerPosition } from '../../entities';
 
 export class RegisterFreeAgentDto {
@@ -8,6 +8,12 @@ export class RegisterFreeAgentDto {
 
   @IsEnum(PlayerPosition)
   position: PlayerPosition;
+
+  /** Where the player is based — shown in the Free Agents pool so teams can see it. */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  location: string;
 
   @IsEmail()
   email: string;

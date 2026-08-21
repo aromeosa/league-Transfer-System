@@ -47,6 +47,7 @@ export interface Player {
   legacyReason?: LegacyReason | null;
   legacyTeam?: LegacyTeam | null;
   position?: PlayerPosition | null;
+  location?: string | null;
   transferValue?: number | null;
   transferCount: number;
   currentTeam?: Team | null;

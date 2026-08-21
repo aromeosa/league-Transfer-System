@@ -36,7 +36,14 @@ export class PlayersController {
   /** Public self-signup — no auth, visible in the pool immediately (no approval workflow). */
   @Post('free-agents')
   registerFreeAgent(@Body() dto: RegisterFreeAgentDto) {
-    return this.playersService.registerFreeAgent(dto.name, dto.position, dto.email, dto.password, dto.idNumber);
+    return this.playersService.registerFreeAgent(
+      dto.name,
+      dto.position,
+      dto.location,
+      dto.email,
+      dto.password,
+      dto.idNumber,
+    );
   }
 
   /** "Add player" — a brand-new player joins the owner's own roster directly, separate
