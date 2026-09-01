@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsString,
   Matches,
-  Max,
   MaxLength,
   Min,
   MinLength,
@@ -33,10 +32,10 @@ export class InitialPlayerDto {
   @MinLength(1)
   name: string;
 
+  /** No upper/lower valuation band — just can't be negative. */
   @IsOptional()
   @IsNumber()
-  @Min(BusinessRules.VALUATION_MIN)
-  @Max(BusinessRules.VALUATION_MAX)
+  @Min(0)
   transferValue?: number;
 
   /** National ID or passport number — optional, hashed before storage (never kept raw). */

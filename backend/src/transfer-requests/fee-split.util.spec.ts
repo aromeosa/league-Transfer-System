@@ -1,5 +1,4 @@
 import { computeFeeSplit, wouldBreachSquadFloor } from './fee-split.util';
-import { BusinessRules } from '../config/business-rules.config';
 
 describe('computeFeeSplit', () => {
   it('splits the worked example from §1.3 exactly (R1,000 -> 200/400/400 entitlement)', () => {
@@ -23,17 +22,14 @@ describe('computeFeeSplit', () => {
     expect(split.leagueAmount + split.clubSettlementAmount).toBe(2500);
   });
 
-  it('matches the band boundaries', () => {
-    expect(computeFeeSplit(BusinessRules.VALUATION_MIN)).toEqual({
-      leagueAmount: BusinessRules.VALUATION_MIN * 0.2,
-      clubSettlementAmount: BusinessRules.VALUATION_MIN * 0.8,
-      playerEntitlement: BusinessRules.VALUATION_MIN * 0.4,
-    });
-    expect(computeFeeSplit(BusinessRules.VALUATION_MAX)).toEqual({
-      leagueAmount: BusinessRules.VALUATION_MAX * 0.2,
-      clubSettlementAmount: BusinessRules.VALUATION_MAX * 0.8,
-      playerEntitlement: BusinessRules.VALUATION_MAX * 0.4,
-    });
+  it('splits correctly at both a small fee and a large one — no upper/lower band anymore', () => {
+    for (const fee of [50, 50000]) {
+      expect(computeFeeSplit(fee)).toEqual({
+        leagueAmount: fee * 0.2,
+        clubSettlementAmount: fee * 0.8,
+        playerEntitlement: fee * 0.4,
+      });
+    }
   });
 });
 
