@@ -8,9 +8,9 @@ export class SubmitTransferRequestDto {
   @IsEnum(RequestType)
   requestType: RequestType;
 
-  // Upper bound and the free-agent-only R0 allowance are business rules that depend on
-  // requestType, so they're enforced in TransferRequestsService.submit() instead — see
-  // there for why a free agent signing can be R0 but a club/legacy transfer can't.
+  // The free-agent-only R0 allowance depends on requestType, so it's enforced in
+  // TransferRequestsService.submit() instead — see there for why a free agent signing
+  // can be R0 but a club/legacy transfer can't. No upper/lower valuation band.
   @IsNumber()
   @Min(0)
   proposedFee: number;

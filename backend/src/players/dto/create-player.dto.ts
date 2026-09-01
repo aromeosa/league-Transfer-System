@@ -1,15 +1,14 @@
-import { IsNumber, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
-import { BusinessRules } from '../../config/business-rules.config';
+import { IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 export class CreatePlayerDto {
   @IsString()
   @MinLength(1)
   name: string;
 
+  /** No upper/lower valuation band — just can't be negative. */
   @IsOptional()
   @IsNumber()
-  @Min(BusinessRules.VALUATION_MIN)
-  @Max(BusinessRules.VALUATION_MAX)
+  @Min(0)
   transferValue?: number;
 
   /** National ID or passport number — optional, hashed before storage (never kept raw). */

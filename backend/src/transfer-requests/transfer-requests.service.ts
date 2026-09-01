@@ -103,7 +103,7 @@ export class TransferRequestsService {
       const proposedFee =
         dto.requestType === RequestType.FREE_AGENT_SIGNING
           ? this.resolveFreeAgentFee(dto.proposedFee)
-          : this.requireBandedFee(dto.proposedFee);
+          : this.requirePositiveFee(dto.proposedFee);
 
       // §1.4 #1/#12 — per-team, per-window cap, capped independently per category.
       // An advisory lock scoped to (team, window, category) closes the race between
@@ -266,26 +266,20 @@ export class TransferRequestsService {
     await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${teamId}:${windowId}:${requestType}`]);
   }
 
-  /**
-   * Only a free agent signing may be free — anything below the valuation floor
-   * collapses to R0 rather than being rejected, so a low-balled offer just becomes a
-   * free signing instead of forcing the payer to bump it up to the R10 minimum.
-   */
+  /** Only a free agent signing may be free — any other non-negative fee is accepted
+   *  as-is, no upper/lower valuation band. */
   private resolveFreeAgentFee(fee: number): number {
-    const resolved = fee > 0 && fee < BusinessRules.VALUATION_MIN ? 0 : fee;
-    if (resolved !== 0 && (resolved < BusinessRules.VALUATION_MIN || resolved > BusinessRules.VALUATION_MAX)) {
-      throw new BadRequestException(
-        `Fee must be R0, or between R${BusinessRules.VALUATION_MIN} and R${BusinessRules.VALUATION_MAX}`,
-      );
+    if (fee < 0) {
+      throw new BadRequestException('Fee cannot be negative');
     }
-    return resolved;
+    return fee;
   }
 
-  private requireBandedFee(fee: number): number {
-    if (fee < BusinessRules.VALUATION_MIN || fee > BusinessRules.VALUATION_MAX) {
-      throw new BadRequestException(
-        `Fee must be between R${BusinessRules.VALUATION_MIN} and R${BusinessRules.VALUATION_MAX}`,
-      );
+  /** A real transfer (club or legacy) needs some actual fee — just not R0 or negative,
+   *  no upper/lower valuation band. */
+  private requirePositiveFee(fee: number): number {
+    if (fee <= 0) {
+      throw new BadRequestException('Fee must be greater than R0');
     }
     return fee;
   }

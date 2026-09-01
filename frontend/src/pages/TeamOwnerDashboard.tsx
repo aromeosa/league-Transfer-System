@@ -340,10 +340,6 @@ function PlayerAvatarCell({
   );
 }
 
-// Mirrors the backend's valuation range (§1.3 / BusinessRules.VALUATION_MIN/MAX).
-const VALUE_MIN = 500;
-const VALUE_MAX = 5000;
-
 // Mirrors the backend's roster ceiling (§4.2 / BusinessRules.ROSTER_MAX) — signing a
 // free agent is disabled once a roster is already full, re-enabled once it drops below.
 const ROSTER_MAX = 15;
@@ -404,8 +400,7 @@ function PlayerValueCell({
       <input
         type="number"
         className="player-value-input"
-        min={VALUE_MIN}
-        max={VALUE_MAX}
+        min={0}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
@@ -850,11 +845,10 @@ function AddPlayerForm({
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={disabled} />
         </label>
         <label>
-          Value (optional, R{VALUE_MIN}–R{VALUE_MAX})
+          Value (optional)
           <input
             type="number"
-            min={VALUE_MIN}
-            max={VALUE_MAX}
+            min={0}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             disabled={disabled}
@@ -896,7 +890,7 @@ function SubmitRequestForm({
   onSubmitted: () => void;
 }) {
   const [playerId, setPlayerId] = useState('');
-  const [fee, setFee] = useState(VALUE_MIN);
+  const [fee, setFee] = useState(500);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -914,7 +908,7 @@ function SubmitRequestForm({
   function selectPlayer(id: string) {
     setPlayerId(id);
     const player = selectable.find((p) => p.id === id);
-    setFee(player?.status === 'FREE_AGENT' ? 0 : VALUE_MIN);
+    setFee(player?.status === 'FREE_AGENT' ? 0 : 500);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -949,11 +943,10 @@ function SubmitRequestForm({
           <PlayerPicker players={selectable} value={playerId} onChange={selectPlayer} disabled={!windowOpen} />
         </label>
         <label>
-          {isFreeAgentSigning ? `Transfer fee (optional — R0 to sign for free, or R${VALUE_MIN}–R${VALUE_MAX})` : `Proposed fee (R${VALUE_MIN}–R${VALUE_MAX})`}
+          {isFreeAgentSigning ? 'Transfer fee (optional — R0 to sign for free)' : 'Proposed fee'}
           <input
             type="number"
-            min={isFreeAgentSigning ? 0 : VALUE_MIN}
-            max={VALUE_MAX}
+            min={0}
             value={fee}
             onChange={(e) => setFee(Number(e.target.value))}
             disabled={!windowOpen}
@@ -1034,7 +1027,6 @@ function ApproachRow({
           <input
             type="number"
             min={0}
-            max={VALUE_MAX}
             value={fee}
             onChange={(e) => setFee(Number(e.target.value))}
             disabled={busy}

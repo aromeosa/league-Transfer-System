@@ -68,11 +68,11 @@ export function HowTransfersWorkPage() {
       <section className="card">
         <h2>5. What does it cost, and where does the money go?</h2>
         <ul>
-          <li>Every registered player has a value, somewhere between <strong>R500 and R5,000</strong>, set by their own team.</li>
+          <li>Every registered player has a value, set by their own team — no fixed range.</li>
           <li>
             You set that value when you register a player, and can change it anytime — no transfer window needed.
           </li>
-          <li>When you want to sign someone else's player, you and their team agree on a fee within that range.</li>
+          <li>When you want to sign someone else's player, you and their team agree on a fee.</li>
           <li>
             Of that fee, <strong>20% goes to the league</strong> and the rest goes to the releasing club. Half of
             what the club receives (40% of the original fee) is meant for the player themselves — it's the club's

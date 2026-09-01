@@ -6,9 +6,6 @@ export const BusinessRules = {
   ROSTER_MIN: 5,
   ROSTER_MAX: 15,
 
-  VALUATION_MIN: 500,
-  VALUATION_MAX: 5000,
-
   // Per team, per window — each capped independently (§1.4 #1/#12).
   WINDOW_CAP_FREE_AGENT_SIGNING: 2,
   WINDOW_CAP_CLUB_TRANSFER: 2,

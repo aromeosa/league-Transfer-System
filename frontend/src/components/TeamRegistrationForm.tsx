@@ -9,10 +9,6 @@ import { resizeImageToDataUrl } from '../utils/resizeImage';
 const MIN_PLAYERS = 5;
 const MAX_PLAYERS = 15;
 
-// Mirrors the backend's valuation range (§1.3 / BusinessRules.VALUATION_MIN/MAX).
-const VALUE_MIN = 500;
-const VALUE_MAX = 5000;
-
 interface PlayerRow {
   name: string;
   value: string;
@@ -161,9 +157,9 @@ export function TeamRegistrationForm({
             Initial roster ({players.length}/{MAX_PLAYERS}, {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players)
           </legend>
           <p className="muted">
-            Set each player's transfer value (R{VALUE_MIN}&ndash;R{VALUE_MAX}). Once your team is active, values can
-            only be changed while a transfer window is open. ID/passport number is optional — used only to confirm
-            a player isn't already registered under another name; never shown to anyone, not even a League Admin.
+            Set each player's transfer value — you can change it anytime, no transfer window needed. ID/passport
+            number is optional — used only to confirm a player isn't already registered under another name; never
+            shown to anyone, not even a League Admin.
           </p>
           {players.map((row, i) => (
             <div className="player-row" key={i}>
@@ -178,8 +174,7 @@ export function TeamRegistrationForm({
                 className="player-value-input"
                 value={row.value}
                 placeholder="Value"
-                min={VALUE_MIN}
-                max={VALUE_MAX}
+                min={0}
                 onChange={(e) => updatePlayer(i, 'value', e.target.value)}
                 required
               />

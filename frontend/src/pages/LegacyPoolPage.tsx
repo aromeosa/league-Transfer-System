@@ -6,8 +6,6 @@ import type { LegacyReason, LegacyTeam, Player, Team, TransferWindow } from '../
 import { DashboardShell } from '../layout/DashboardShell';
 import { TEAM_OWNER_NAV } from '../layout/nav';
 
-const VALUE_MIN = 500;
-const VALUE_MAX = 5000;
 const ROSTER_MAX = 15;
 
 const LEGACY_REASON_LABEL: Record<LegacyReason, string> = {
@@ -28,7 +26,7 @@ export function LegacyPoolPage() {
   const [window_, setWindow] = useState<TransferWindow | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
-  const [fee, setFee] = useState(VALUE_MIN);
+  const [fee, setFee] = useState(500);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -84,7 +82,7 @@ export function LegacyPoolPage() {
       );
       setSelectedTeamId('');
       setSelectedPlayerId('');
-      setFee(VALUE_MIN);
+      setFee(500);
       refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to submit request');
@@ -146,11 +144,10 @@ export function LegacyPoolPage() {
               </select>
             </label>
             <label>
-              Fee (R{VALUE_MIN}–R{VALUE_MAX})
+              Fee
               <input
                 type="number"
-                min={VALUE_MIN}
-                max={VALUE_MAX}
+                min={0}
                 value={fee}
                 onChange={(e) => setFee(Number(e.target.value))}
                 disabled={disabled}
