@@ -65,6 +65,17 @@ services:
       # it back. Render auto-generates and keeps this; no manual setup needed.
       - key: ID_NUMBER_HASH_PEPPER
         generateValue: true
+      # Resend API key (resend.com), for the forgot-password reset email. Leaving it
+      # unset keeps the mock mail service active (logs the reset link instead of
+      # emailing it) — see mail.module.ts. Set directly in the Render dashboard.
+      - key: RESEND_API_KEY
+        sync: false
+      # Must be an address on a domain verified in the Resend dashboard. Falls back to
+      # Resend's shared, heavily-rate-limited onboarding@resend.dev sender if unset —
+      # fine for a quick smoke test, not for real traffic. Set directly in the Render
+      # dashboard once you've verified a domain.
+      - key: RESEND_FROM_EMAIL
+        sync: false
 
 databases:
   - name: 5quadleague-db
