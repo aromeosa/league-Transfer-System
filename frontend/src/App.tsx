@@ -52,14 +52,7 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route
-        path="/how-it-works"
-        element={
-          <RequireAuth role="TEAM_OWNER">
-            <HowTransfersWorkPage />
-          </RequireAuth>
-        }
-      />
+      <Route path="/how-it-works" element={<HowTransfersWorkPage />} />
       <Route
         path="/legacy-pool"
         element={
