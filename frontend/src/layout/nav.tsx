@@ -24,6 +24,7 @@ export function getFreeAgentNav(loggedIn: boolean): NavItem[] {
     { label: 'Free Agents', path: '/free-agents', icon: <UsersIcon /> },
     ...(loggedIn ? [] : [{ label: 'Sign up', path: '/register-free-agent', icon: <UserIcon /> }]),
     { label: 'View Teams', path: '/teams', icon: <TableIcon /> },
+    { label: 'How Transfers Work', path: '/how-it-works', icon: <TransferIcon /> },
   ];
 }
 
