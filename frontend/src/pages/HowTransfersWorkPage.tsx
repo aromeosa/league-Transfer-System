@@ -1,11 +1,11 @@
 import { useAuth } from '../auth/AuthContext';
 import { DashboardShell } from '../layout/DashboardShell';
-import { TEAM_OWNER_NAV } from '../layout/nav';
+import { getNavForUser } from '../layout/nav';
 
 export function HowTransfersWorkPage() {
   const { user, logout } = useAuth();
 
-  const navItems = TEAM_OWNER_NAV;
+  const navItems = getNavForUser(user);
 
   return (
     <DashboardShell title="How Transfers Work" userName={user?.name} onLogout={logout} navItems={navItems}>
