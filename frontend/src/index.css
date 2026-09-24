@@ -672,6 +672,22 @@ button + button {
   cursor: pointer;
 }
 
+.icon-button {
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  color: var(--text);
+}
+
 .player-avatar,
 .player-avatar-placeholder {
   width: 2.1rem;
