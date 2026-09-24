@@ -132,6 +132,15 @@ export function LogOutIcon(props: IconProps) {
   );
 }
 
+export function PencilIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M15.5 4.5 19.5 8.5 8 20 3.75 20.25 4 16Z" />
+      <path d="M13.5 6.5 17.5 10.5" />
+    </svg>
+  );
+}
+
 export function EyeIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

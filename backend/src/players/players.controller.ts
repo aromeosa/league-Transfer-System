@@ -8,6 +8,7 @@ import { ActiveTeamGuard } from '../teams/active-team.guard';
 import { PlayerStatus, UserRole } from '../entities';
 import { PlayersService } from './players.service';
 import { UpdatePlayerValueDto } from './dto/update-player-value.dto';
+import { UpdatePlayerNameDto } from './dto/update-player-name.dto';
 import { UpdatePlayerPhotoDto } from './dto/update-player-photo.dto';
 import { UpdatePlayerLocationDto } from './dto/update-player-location.dto';
 import { RegisterFreeAgentDto } from './dto/register-free-agent.dto';
@@ -96,6 +97,14 @@ export class PlayersController {
   @Roles(UserRole.FREE_AGENT)
   updateOwnLocation(@Body() dto: UpdatePlayerLocationDto, @CurrentUser() user: AuthenticatedUser) {
     return this.playersService.updateOwnLocation(dto.location, user);
+  }
+
+  /** League Admin corrects a player's name — works on any player, any status. */
+  @Patch(':id/name')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LEAGUE_ADMIN)
+  updateName(@Param('id') id: string, @Body() dto: UpdatePlayerNameDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.playersService.adminUpdateName(id, dto.name, user);
   }
 
   @Patch(':id/value')

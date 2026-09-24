@@ -57,6 +57,11 @@ export function AdminTeamsPage() {
     };
   }, [token, refreshKey]);
 
+  async function renamePlayer(player: Player, name: string) {
+    await api.patch(`/players/${player.id}/name`, { name }, token);
+    refresh();
+  }
+
   const rosterRows = useMemo(
     () => teams.flatMap((team) => (team.roster ?? []).map((player) => ({ player, teamName: team.name }))),
     [teams],
@@ -126,7 +131,7 @@ export function AdminTeamsPage() {
                           <ul className="team-roster-expanded">
                             {t.roster!.map((p) => (
                               <li key={p.id}>
-                                <PlayerNameCell player={p} />
+                                <PlayerNameCell player={p} onRename={renamePlayer} />
                               </li>
                             ))}
                           </ul>
@@ -142,7 +147,7 @@ export function AdminTeamsPage() {
       </section>
 
       <section className="card">
-        <FreeAgentsTable players={freeAgents} />
+        <FreeAgentsTable players={freeAgents} onRename={renamePlayer} />
       </section>
 
       <section className="card">
@@ -162,7 +167,7 @@ export function AdminTeamsPage() {
                 {filtered.map(({ player, teamName }) => (
                   <tr key={player.id}>
                     <td>
-                      <PlayerNameCell player={player} />
+                      <PlayerNameCell player={player} onRename={renamePlayer} />
                     </td>
                     <td>{teamName}</td>
                     <td>{player.originType}</td>
@@ -255,7 +260,9 @@ export function AdminTeamsPage() {
             <tbody>
               {legacyPlayers.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.name}</td>
+                  <td>
+                    <PlayerNameCell player={p} onRename={renamePlayer} />
+                  </td>
                   <td>{p.legacyTeam?.name ?? '—'}</td>
                   <td>{LEGACY_REASONS.find((r) => r.value === p.legacyReason)?.label ?? p.legacyReason ?? '—'}</td>
                   <td>{p.currentTeam ? `Signed — ${p.currentTeam.name}` : 'Available'}</td>
@@ -288,7 +295,7 @@ export function AdminTeamsPage() {
                 {filtered.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <PlayerNameCell player={p} />
+                      <PlayerNameCell player={p} onRename={renamePlayer} />
                     </td>
                     <td>{p.currentTeam?.name ?? '— unattached —'}</td>
                     <td>{p.originType}</td>

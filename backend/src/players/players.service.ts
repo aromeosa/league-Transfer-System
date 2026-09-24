@@ -270,6 +270,32 @@ export class PlayersService {
     return this.playerRepo.save(player);
   }
 
+  /**
+   * League Admin corrects a player's name — e.g. a typo at signup or a legal name
+   * change. Works on any player regardless of status/team. Keeps a linked login
+   * account's own name in sync (Free Agents have one) so the name shown on their own
+   * dashboard doesn't drift from what everyone else sees on the roster/pool.
+   */
+  async adminUpdateName(playerId: string, name: string, actingUser: AuthenticatedUser): Promise<Player> {
+    if (actingUser.role !== UserRole.LEAGUE_ADMIN) {
+      throw new ForbiddenException('Only a League Admin may rename a player');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const player = await manager.findOne(Player, { where: { id: playerId }, relations: ['account'] });
+      if (!player) {
+        throw new NotFoundException('Player not found');
+      }
+
+      player.name = name;
+      if (player.account) {
+        player.account.name = name;
+        await manager.save(UserAccount, player.account);
+      }
+      return manager.save(Player, player);
+    });
+  }
+
   private async getOwnPlayer(actingUser: AuthenticatedUser): Promise<Player> {
     if (actingUser.role !== UserRole.FREE_AGENT || !actingUser.playerId) {
       throw new ForbiddenException('Only a Free Agent may manage their own profile');

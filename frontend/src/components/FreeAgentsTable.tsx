@@ -6,10 +6,12 @@ export function FreeAgentsTable({
   players,
   label = 'Free Agents',
   defaultOpen = false,
+  onRename,
 }: {
   players: Player[];
   label?: string;
   defaultOpen?: boolean;
+  onRename?: (player: Player, name: string) => Promise<void>;
 }) {
   return (
     <CollapsibleList label={label} items={players} getName={(p) => p.name} defaultOpen={defaultOpen}>
@@ -26,7 +28,7 @@ export function FreeAgentsTable({
             {filtered.map((p) => (
               <tr key={p.id}>
                 <td>
-                  <PlayerNameCell player={p} />
+                  <PlayerNameCell player={p} onRename={onRename} />
                 </td>
                 <td>{p.position ?? '—'}</td>
                 <td>{p.location ?? '—'}</td>
