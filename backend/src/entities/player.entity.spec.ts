@@ -51,4 +51,16 @@ describe('Player serialization', () => {
 
     expect(instanceToPlain(player).hasAccount).toBe(false);
   });
+
+  it('never exposes the registration-confirmation email', () => {
+    const player = new Player();
+    player.id = 'p3';
+    player.name = 'Pending Player';
+    player.status = PlayerStatus.PENDING_APPROVAL;
+    player.originType = PlayerOrigin.DIRECT_REGISTRATION;
+    player.transferCount = 0;
+    player.email = 'pending@example.com';
+
+    expect(instanceToPlain(player).email).toBeUndefined();
+  });
 });

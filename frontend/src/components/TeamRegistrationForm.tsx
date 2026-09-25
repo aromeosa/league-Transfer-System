@@ -13,10 +13,11 @@ interface PlayerRow {
   name: string;
   value: string;
   idNumber: string;
+  email: string;
 }
 
 function emptyRoster(): PlayerRow[] {
-  return Array.from({ length: MIN_PLAYERS }, () => ({ name: '', value: '', idNumber: '' }));
+  return Array.from({ length: MIN_PLAYERS }, () => ({ name: '', value: '', idNumber: '', email: '' }));
 }
 
 /**
@@ -59,7 +60,9 @@ export function TeamRegistrationForm({
   }
 
   function addPlayer() {
-    setPlayers((rows) => (rows.length >= MAX_PLAYERS ? rows : [...rows, { name: '', value: '', idNumber: '' }]));
+    setPlayers((rows) =>
+      rows.length >= MAX_PLAYERS ? rows : [...rows, { name: '', value: '', idNumber: '', email: '' }],
+    );
   }
 
   function removePlayer(index: number) {
@@ -85,6 +88,7 @@ export function TeamRegistrationForm({
             .filter((p) => p.name.trim())
             .map((p) => ({
               name: p.name,
+              email: p.email.trim(),
               transferValue: p.value ? Number(p.value) : undefined,
               idNumber: p.idNumber.trim() || undefined,
             })),
@@ -157,9 +161,10 @@ export function TeamRegistrationForm({
             Initial roster ({players.length}/{MAX_PLAYERS}, {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players)
           </legend>
           <p className="muted">
-            Set each player's transfer value — you can change it anytime, no transfer window needed. ID/passport
-            number is optional — used only to confirm a player isn't already registered under another name; never
-            shown to anyone, not even a League Admin.
+            Set each player's transfer value — you can change it anytime, no transfer window needed. Each player gets
+            an email asking them to confirm — they only count as registered once they accept. ID/passport number is
+            optional — used only to confirm a player isn't already registered under another name; never shown to
+            anyone, not even a League Admin.
           </p>
           {players.map((row, i) => (
             <div className="player-row" key={i}>
@@ -167,6 +172,13 @@ export function TeamRegistrationForm({
                 value={row.name}
                 placeholder={`Player ${i + 1} name`}
                 onChange={(e) => updatePlayer(i, 'name', e.target.value)}
+                required
+              />
+              <input
+                type="email"
+                value={row.email}
+                placeholder="Player email"
+                onChange={(e) => updatePlayer(i, 'email', e.target.value)}
                 required
               />
               <input

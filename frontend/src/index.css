@@ -1052,6 +1052,28 @@ button + button {
   color: var(--legacy);
 }
 
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--accent-hover, var(--accent));
+}
+
+.link-button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  text-decoration: none;
+}
+
 /* ---------- Payment timeline (3-step settlement checklist) ---------- */
 
 .payment-timeline {

@@ -66,6 +66,17 @@ export class Player {
   @Column({ name: 'avatar_url', type: 'text', nullable: true })
   avatarUrl?: string | null;
 
+  /**
+   * Collected only for a player a team owner registers directly (initial roster or
+   * "Add player") — what the registration-confirmation email goes to. Never returned
+   * by the API (see idNumberHash for the same treatment) since a Free Agent's own
+   * account email already lives on UserAccount, and this one has no other use once the
+   * confirmation is sent.
+   */
+  @Exclude()
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  email?: string | null;
+
   /** Inverse side — the owning FK (`player_id`) lives on UserAccount. Free Agents only. */
   @Exclude()
   @OneToOne(() => UserAccount, (account) => account.player)

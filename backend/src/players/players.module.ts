@@ -3,11 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Player } from '../entities';
 import { AuthModule } from '../auth/auth.module';
 import { TeamsModule } from '../teams/teams.module';
+import { PlayerRegistrationModule } from '../player-registration/player-registration.module';
 import { PlayersService } from './players.service';
 import { PlayersController } from './players.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Player]), AuthModule, TeamsModule],
+  imports: [TypeOrmModule.forFeature([Player]), AuthModule, TeamsModule, PlayerRegistrationModule],
   controllers: [PlayersController],
   providers: [PlayersService],
   exports: [PlayersService],

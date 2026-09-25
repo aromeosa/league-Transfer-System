@@ -17,6 +17,7 @@ import {
 import { isUniqueViolation } from '../common/db-errors.util';
 import { hashIdNumber } from '../players/id-number.util';
 import { AuthenticatedUser } from '../auth/jwt-payload.interface';
+import { PlayerRegistrationService } from '../player-registration/player-registration.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class TeamsService {
   constructor(
     @InjectRepository(Team) private readonly teamRepo: Repository<Team>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly registrationService: PlayerRegistrationService,
   ) {}
 
   /** League Admin only — direct creation is already an implicit approval, so the team is ACTIVE immediately. */
@@ -48,8 +50,9 @@ export class TeamsService {
       throw new ConflictException('A user with this email already exists');
     }
 
+    let createdPlayers: Player[] = [];
     try {
-      return await this.dataSource.transaction(async (manager) => {
+      const savedTeam = await this.dataSource.transaction(async (manager) => {
         const team = await manager.save(
           Team,
           manager.create(Team, { name: dto.name, status, logoUrl: dto.logoDataUrl ?? null }),
@@ -70,8 +73,12 @@ export class TeamsService {
         const players = dto.players.map((p) =>
           manager.create(Player, {
             name: p.name,
+            email: p.email,
             currentTeam: team,
-            status: PlayerStatus.REGISTERED,
+            // Counts toward the roster (and its cap) immediately, but isn't REGISTERED
+            // until each player accepts their emailed confirmation link — see
+            // PlayerRegistrationService.
+            status: PlayerStatus.PENDING_APPROVAL,
             originType: PlayerOrigin.DIRECT_REGISTRATION,
             transferValue: p.transferValue ?? null,
             transferCount: 0,
@@ -79,6 +86,7 @@ export class TeamsService {
           }),
         );
         const savedPlayers = await manager.save(Player, players);
+        createdPlayers = savedPlayers;
 
         const joinedAt = new Date();
         await manager.save(
@@ -88,6 +96,9 @@ export class TeamsService {
 
         return this.getTeam(team.id, manager.getRepository(Team));
       });
+
+      await Promise.all(createdPlayers.map((p) => this.registrationService.issueInvite(p, savedTeam.name)));
+      return savedTeam;
     } catch (err) {
       if (isUniqueViolation(err, 'email')) {
         throw new ConflictException('A user with this email already exists');

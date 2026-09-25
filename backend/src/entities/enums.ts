@@ -19,6 +19,10 @@ export enum PlayerStatus {
   FREE_AGENT = 'FREE_AGENT',
   REGISTERED = 'REGISTERED',
   LEGACY = 'LEGACY',
+  /** A team owner registered this player, but they haven't yet accepted the emailed
+   *  confirmation link — counts toward the roster (and its cap) but isn't a real
+   *  Registered player until they do (see PlayerRegistrationService). */
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
 }
 
 export enum PlayerOrigin {

@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Team } from '../entities';
 import { AuthModule } from '../auth/auth.module';
+import { PlayerRegistrationModule } from '../player-registration/player-registration.module';
 import { TeamsService } from './teams.service';
 import { TeamsController } from './teams.controller';
 import { ActiveTeamGuard } from './active-team.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Team]), AuthModule],
+  imports: [TypeOrmModule.forFeature([Team]), AuthModule, PlayerRegistrationModule],
   controllers: [TeamsController],
   providers: [TeamsService, ActiveTeamGuard],
   exports: [TeamsService, ActiveTeamGuard],
