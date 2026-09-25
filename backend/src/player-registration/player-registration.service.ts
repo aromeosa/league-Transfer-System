@@ -10,8 +10,11 @@ const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 /**
  * A player a team owner registers directly (initial roster or "Add player") starts
  * PENDING_APPROVAL and must accept an emailed link before they count as REGISTERED.
- * Its own module — separate from PlayersModule/TeamsModule — since both need it and
- * neither can depend on the other (PlayersModule already depends on TeamsModule).
+ * The same token/email mechanism also covers *retroactive* verification: a team can
+ * request it from an already-REGISTERED player (added before this feature existed) too
+ * — that case never touches status, just emailVerified. Its own module — separate from
+ * PlayersModule/TeamsModule — since both need it and neither can depend on the other
+ * (PlayersModule already depends on TeamsModule).
  */
 @Injectable()
 export class PlayerRegistrationService {
@@ -23,6 +26,9 @@ export class PlayerRegistrationService {
 
   async issueInvite(player: Player, teamName: string): Promise<void> {
     if (!player.email) return;
+
+    player.emailVerified = false;
+    await this.playerRepo.save(player);
 
     const rawToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
@@ -51,20 +57,26 @@ export class PlayerRegistrationService {
     if (!token || token.usedAt || token.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException('This confirmation link is invalid or has expired');
     }
-    if (token.player.status !== PlayerStatus.PENDING_APPROVAL) {
+    if (token.player.emailVerified) {
       throw new BadRequestException('This registration has already been confirmed');
     }
 
     token.usedAt = new Date();
     await this.tokenRepo.save(token);
 
-    token.player.status = PlayerStatus.REGISTERED;
+    token.player.emailVerified = true;
+    // Only a brand-new registration needs this — a retroactive request on an
+    // already-REGISTERED player never changed their status to begin with.
+    if (token.player.status === PlayerStatus.PENDING_APPROVAL) {
+      token.player.status = PlayerStatus.REGISTERED;
+    }
     return this.playerRepo.save(token.player);
   }
 
-  /** Team owner resending a lost/expired invite to one of their own pending players. */
+  /** Team owner (re)sending an invite — a lost/expired one for a pending player, or a
+   *  first-time retroactive request for an already-REGISTERED one. */
   async resend(player: Player, teamName: string): Promise<void> {
-    if (player.status !== PlayerStatus.PENDING_APPROVAL) {
+    if (player.emailVerified) {
       throw new BadRequestException('This player has already confirmed their registration');
     }
     await this.issueInvite(player, teamName);

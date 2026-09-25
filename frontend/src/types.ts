@@ -58,6 +58,13 @@ export interface Player {
   /** True only for a player who self-registered through the public Free Agent signup
    *  form — false for one a team/admin added directly, even with the same originType. */
   hasAccount: boolean;
+  /** Whether a team-registered player has ever accepted their registration-confirmation
+   *  email — defaults true for every player from before this existed, so it only reads
+   *  false once a request has actually been sent and not yet accepted. */
+  emailVerified: boolean;
+  /** Whether an email is on file to send a verification request to at all — false for a
+   *  player registered before this feature existed who's never had one requested. */
+  hasEmailOnFile: boolean;
 }
 
 export interface Team {

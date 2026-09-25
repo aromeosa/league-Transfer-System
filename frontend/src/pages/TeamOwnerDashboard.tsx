@@ -99,6 +99,10 @@ export function TeamOwnerDashboard() {
     () => team?.roster?.reduce((sum, p) => sum + (p.transferValue ?? 0), 0) ?? 0,
     [team],
   );
+  const unverifiedCount = useMemo(
+    () => team?.roster?.filter((p) => p.status === 'REGISTERED' && (!p.hasEmailOnFile || !p.emailVerified)).length ?? 0,
+    [team],
+  );
 
   const navItems = TEAM_OWNER_NAV;
 
@@ -150,6 +154,13 @@ export function TeamOwnerDashboard() {
       <section className="card">
         <h2>Roster ({team.roster?.length ?? 0})</h2>
         <p className="muted">You can adjust player values below anytime — no transfer window needed.</p>
+        {unverifiedCount > 0 && (
+          <p className="banner banner-bad">
+            {unverifiedCount} registered player{unverifiedCount === 1 ? '' : 's'} on your roster{' '}
+            {unverifiedCount === 1 ? "hasn't" : "haven't"} verified their registration by email yet — see below to
+            request or resend it.
+          </p>
+        )}
         <table>
           <thead>
             <tr>
@@ -294,6 +305,7 @@ function PlayerAvatarCell({
   const [error, setError] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState('');
 
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -312,14 +324,15 @@ function PlayerAvatarCell({
     }
   }
 
-  async function resendInvite() {
+  async function sendVerification(email?: string) {
     setError(null);
     setResending(true);
     try {
-      await api.post(`/players/${player.id}/resend-registration-email`, {}, token);
+      await api.post(`/players/${player.id}/resend-registration-email`, email ? { email } : {}, token);
       setResent(true);
+      onUpdated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to resend confirmation email');
+      setError(err instanceof ApiError ? err.message : 'Failed to send verification email');
     } finally {
       setResending(false);
     }
@@ -347,9 +360,58 @@ function PlayerAvatarCell({
         {player.status === 'PENDING_APPROVAL' && (
           <>
             {' '}
-            <button type="button" className="link-button" disabled={resending || resent} onClick={resendInvite}>
+            <button
+              type="button"
+              className="link-button"
+              disabled={resending || resent}
+              onClick={() => sendVerification()}
+            >
               {resent ? 'Email resent' : resending ? 'Resending…' : 'Resend confirmation email'}
             </button>
+          </>
+        )}
+        {player.status === 'REGISTERED' && !player.emailVerified && player.hasEmailOnFile && (
+          <>
+            {' '}
+            <span className="badge badge-pending">Unverified</span>{' '}
+            <button
+              type="button"
+              className="link-button"
+              disabled={resending || resent}
+              onClick={() => sendVerification()}
+            >
+              {resent ? 'Email resent' : resending ? 'Resending…' : 'Resend verification email'}
+            </button>
+          </>
+        )}
+        {player.status === 'REGISTERED' && !player.hasEmailOnFile && (
+          <>
+            {' '}
+            <span className="badge badge-pending">Unverified</span>
+            {resent ? (
+              <span className="muted"> — verification email sent</span>
+            ) : (
+              <form
+                className="inline-form"
+                style={{ display: 'inline-flex', gap: '0.4rem', marginLeft: '0.5rem' }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (verifyEmail.trim()) sendVerification(verifyEmail.trim());
+                }}
+              >
+                <input
+                  type="email"
+                  value={verifyEmail}
+                  onChange={(ev) => setVerifyEmail(ev.target.value)}
+                  placeholder="Player email"
+                  disabled={resending}
+                  style={{ width: '10rem' }}
+                />
+                <button type="submit" className="link-button" disabled={resending || !verifyEmail.trim()}>
+                  {resending ? 'Sending…' : 'Request verification'}
+                </button>
+              </form>
+            )}
           </>
         )}
         {error && (
