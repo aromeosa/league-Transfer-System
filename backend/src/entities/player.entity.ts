@@ -77,6 +77,21 @@ export class Player {
   @Column({ type: 'varchar', length: 255, nullable: true })
   email?: string | null;
 
+  @Expose()
+  get hasEmailOnFile(): boolean {
+    return !!this.email;
+  }
+
+  /**
+   * Defaults true so every pre-existing player (registered before this feature existed)
+   * stays exactly as they are — nobody is retroactively flagged just because the column
+   * was added. Only flips false the moment a verification request is actually sent (see
+   * PlayerRegistrationService.issueInvite), whether that's a brand-new PENDING_APPROVAL
+   * player's first invite or a retroactive request sent to an already-REGISTERED one.
+   */
+  @Column({ name: 'email_verified', type: 'boolean', default: true })
+  emailVerified: boolean;
+
   /** Inverse side — the owning FK (`player_id`) lives on UserAccount. Free Agents only. */
   @Exclude()
   @OneToOne(() => UserAccount, (account) => account.player)

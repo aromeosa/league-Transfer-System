@@ -15,6 +15,7 @@ import { RegisterFreeAgentDto } from './dto/register-free-agent.dto';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { CreateLegacyPlayerDto } from './dto/create-legacy-player.dto';
 import { ConfirmPlayerRegistrationDto } from './dto/confirm-player-registration.dto';
+import { ResendRegistrationEmailDto } from './dto/resend-registration-email.dto';
 
 /**
  * Guards are per-method rather than class-level (unlike siblings guarded wholesale)
@@ -64,12 +65,18 @@ export class PlayersController {
     return this.playersService.confirmRegistration(dto.token);
   }
 
-  /** Team owner resending a lost/expired invite to one of their own pending players. */
+  /** Team owner (re)sending an invite to one of their own players — a lost/expired one
+   *  for a pending player, or a first-time retroactive request (with an email) for an
+   *  already-REGISTERED one. */
   @Post(':id/resend-registration-email')
   @UseGuards(JwtAuthGuard, RolesGuard, ActiveTeamGuard)
   @Roles(UserRole.TEAM_OWNER)
-  resendRegistrationEmail(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.playersService.resendRegistrationEmail(id, user);
+  resendRegistrationEmail(
+    @Param('id') id: string,
+    @Body() dto: ResendRegistrationEmailDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.playersService.resendRegistrationEmail(id, user, dto.email);
   }
 
   /** League Admin curates the Legacy Pool — the player starts unattached, available for

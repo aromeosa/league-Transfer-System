@@ -63,4 +63,26 @@ describe('Player serialization', () => {
 
     expect(instanceToPlain(player).email).toBeUndefined();
   });
+
+  it('exposes hasEmailOnFile but never the underlying email', () => {
+    const player = new Player();
+    player.id = 'p4';
+    player.name = 'Player With Email';
+    player.status = PlayerStatus.REGISTERED;
+    player.originType = PlayerOrigin.DIRECT_REGISTRATION;
+    player.transferCount = 0;
+    player.email = 'someone@example.com';
+
+    const plain = instanceToPlain(player);
+
+    expect(plain.hasEmailOnFile).toBe(true);
+    expect(plain.email).toBeUndefined();
+  });
+
+  it('hasEmailOnFile is false when no email is on file', () => {
+    const player = new Player();
+    player.email = null;
+
+    expect(instanceToPlain(player).hasEmailOnFile).toBe(false);
+  });
 });

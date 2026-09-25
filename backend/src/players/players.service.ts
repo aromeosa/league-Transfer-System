@@ -124,9 +124,21 @@ export class PlayersService {
     return { playerName: player.name, teamName: player.currentTeam?.name ?? null };
   }
 
-  /** Team owner resending a lost/expired invite to one of their own pending players. */
-  async resendRegistrationEmail(playerId: string, actingUser: AuthenticatedUser): Promise<void> {
+  /**
+   * Team owner (re)sending an invite to one of their own players — a lost/expired one
+   * for a still-pending player, or a first-time retroactive request for an
+   * already-REGISTERED player who never had one (an `email` is required for that case,
+   * since one was never collected for them).
+   */
+  async resendRegistrationEmail(playerId: string, actingUser: AuthenticatedUser, email?: string): Promise<void> {
     const player = await this.getOwnedPlayer(playerId, actingUser);
+    if (email) {
+      player.email = email;
+      await this.playerRepo.save(player);
+    }
+    if (!player.email) {
+      throw new BadRequestException('An email is required to request verification');
+    }
     await this.registrationService.resend(player, player.currentTeam!.name);
   }
 
