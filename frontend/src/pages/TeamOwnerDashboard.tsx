@@ -292,6 +292,8 @@ function PlayerAvatarCell({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -307,6 +309,19 @@ function PlayerAvatarCell({
       setError(err instanceof ApiError || err instanceof Error ? err.message : 'Failed to upload photo');
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function resendInvite() {
+    setError(null);
+    setResending(true);
+    try {
+      await api.post(`/players/${player.id}/resend-registration-email`, {}, token);
+      setResent(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to resend confirmation email');
+    } finally {
+      setResending(false);
     }
   }
 
@@ -329,6 +344,14 @@ function PlayerAvatarCell({
       <span>
         {player.name}
         <PlayerStatusBadge status={player.status} />
+        {player.status === 'PENDING_APPROVAL' && (
+          <>
+            {' '}
+            <button type="button" className="link-button" disabled={resending || resent} onClick={resendInvite}>
+              {resent ? 'Email resent' : resending ? 'Resending…' : 'Resend confirmation email'}
+            </button>
+          </>
+        )}
         {error && (
           <>
             <br />
@@ -792,6 +815,7 @@ function AddPlayerForm({
   onAdded: () => void;
 }) {
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [value, setValue] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -802,7 +826,7 @@ function AddPlayerForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !email.trim()) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -810,12 +834,14 @@ function AddPlayerForm({
         '/players',
         {
           name: name.trim(),
+          email: email.trim(),
           ...(value ? { transferValue: Number(value) } : {}),
           ...(idNumber.trim() ? { idNumber: idNumber.trim() } : {}),
         },
         token,
       );
       setName('');
+      setEmail('');
       setValue('');
       setIdNumber('');
       onAdded();
@@ -831,7 +857,8 @@ function AddPlayerForm({
       <h2>Add a new player</h2>
       <p className="muted">
         Register a brand-new player straight onto your roster — separate from signing or requesting an existing
-        player. Unlike a transfer, this works anytime — no transfer window needed.
+        player. Unlike a transfer, this works anytime — no transfer window needed. They'll get an email asking them
+        to confirm, and only count as registered once they accept.
       </p>
       {atCap && (
         <p className="muted">
@@ -843,6 +870,10 @@ function AddPlayerForm({
         <label>
           Player name
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={disabled} />
+        </label>
+        <label>
+          Player email
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={disabled} />
         </label>
         <label>
           Value (optional)
@@ -866,11 +897,13 @@ function AddPlayerForm({
             placeholder="Optional"
           />
         </label>
-        <button type="submit" disabled={disabled || !name.trim() || submitting}>
+        <button type="submit" disabled={disabled || !name.trim() || !email.trim() || submitting}>
           {submitting ? 'Adding…' : 'Add player'}
         </button>
       </form>
-      <p className="muted">Used only to confirm this isn't a duplicate registration — never shown to anyone.</p>
+      <p className="muted">
+        ID/passport is used only to confirm this isn't a duplicate registration — never shown to anyone.
+      </p>
       {error && <p className="error">{error}</p>}
     </section>
   );

@@ -18,12 +18,14 @@ import { AuthenticatedUser } from '../auth/jwt-payload.interface';
 import { isUniqueViolation } from '../common/db-errors.util';
 import { BusinessRules } from '../config/business-rules.config';
 import { hashIdNumber } from './id-number.util';
+import { PlayerRegistrationService } from '../player-registration/player-registration.service';
 
 @Injectable()
 export class PlayersService {
   constructor(
     @InjectRepository(Player) private readonly playerRepo: Repository<Player>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly registrationService: PlayerRegistrationService,
   ) {}
 
   /**
@@ -58,12 +60,14 @@ export class PlayersService {
    * roster directly, with no other team/approval/actual free-agent-pool listing
    * involved. Registration onto the system is persistent year-round — only *signing*
    * an existing player (a real transfer) is window-gated — so this stays roster-capped
-   * but not window-gated.
+   * but not window-gated. Starts PENDING_APPROVAL — counts toward the roster (and its
+   * cap) immediately, but isn't REGISTERED until the player accepts the emailed link.
    */
   async addPlayer(
     name: string,
     transferValue: number | undefined,
     idNumber: string | undefined,
+    email: string,
     actingUser: AuthenticatedUser,
   ): Promise<Player> {
     if (actingUser.role !== UserRole.TEAM_OWNER || !actingUser.teamId) {
@@ -71,8 +75,9 @@ export class PlayersService {
     }
     const teamId = actingUser.teamId;
 
+    let player: Player;
     try {
-      return await this.dataSource.transaction(async (manager) => {
+      player = await this.dataSource.transaction(async (manager) => {
         const rosterSize = await manager.count(Player, { where: { currentTeam: { id: teamId } } });
         if (rosterSize + 1 > BusinessRules.ROSTER_MAX) {
           throw new BadRequestException(`Your roster would exceed the ${BusinessRules.ROSTER_MAX}-player maximum`);
@@ -82,8 +87,9 @@ export class PlayersService {
           Player,
           manager.create(Player, {
             name,
+            email,
             currentTeam: { id: teamId } as Team,
-            status: PlayerStatus.REGISTERED,
+            status: PlayerStatus.PENDING_APPROVAL,
             // Unlike the initial team-registration bootstrap roster (DIRECT_REGISTRATION),
             // a player added this way is treated as having come from the free agent pool.
             originType: PlayerOrigin.FREE_AGENT_ORIGIN,
@@ -106,6 +112,22 @@ export class PlayersService {
       }
       throw err;
     }
+
+    const withTeam = await this.playerRepo.findOne({ where: { id: player.id }, relations: ['currentTeam'] });
+    await this.registrationService.issueInvite(withTeam!, withTeam!.currentTeam!.name);
+    return withTeam!;
+  }
+
+  /** Public — the raw token from the emailed link is the only credential needed. */
+  async confirmRegistration(rawToken: string): Promise<{ playerName: string; teamName: string | null }> {
+    const player = await this.registrationService.confirm(rawToken);
+    return { playerName: player.name, teamName: player.currentTeam?.name ?? null };
+  }
+
+  /** Team owner resending a lost/expired invite to one of their own pending players. */
+  async resendRegistrationEmail(playerId: string, actingUser: AuthenticatedUser): Promise<void> {
+    const player = await this.getOwnedPlayer(playerId, actingUser);
+    await this.registrationService.resend(player, player.currentTeam!.name);
   }
 
   /** Public directory of current Free Agents — used by the Teams and Free Agents pages. */

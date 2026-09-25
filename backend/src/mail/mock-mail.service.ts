@@ -14,4 +14,15 @@ export class MockMailService implements MailService {
   async sendPasswordReset(toEmail: string, resetUrl: string): Promise<void> {
     this.logger.log(`[MOCK MAIL] Password reset for ${toEmail}: ${resetUrl}`);
   }
+
+  async sendPlayerRegistrationInvite(
+    toEmail: string,
+    playerName: string,
+    teamName: string,
+    confirmUrl: string,
+  ): Promise<void> {
+    this.logger.log(
+      `[MOCK MAIL] Registration confirmation for ${playerName} <${toEmail}> (${teamName}): ${confirmUrl}`,
+    );
+  }
 }
