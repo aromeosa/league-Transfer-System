@@ -306,6 +306,7 @@ function PlayerAvatarCell({
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [verifyEmail, setVerifyEmail] = useState('');
+  const [requestingEmail, setRequestingEmail] = useState(false);
 
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -390,27 +391,49 @@ function PlayerAvatarCell({
             <span className="badge badge-pending">Unverified</span>
             {resent ? (
               <span className="muted"> — verification email sent</span>
+            ) : requestingEmail ? (
+              <>
+                <br />
+                <form
+                  className="inline-form"
+                  style={{ display: 'inline-flex', gap: '0.4rem', marginTop: '0.3rem' }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (verifyEmail.trim()) sendVerification(verifyEmail.trim());
+                  }}
+                >
+                  <input
+                    autoFocus
+                    type="email"
+                    value={verifyEmail}
+                    onChange={(ev) => setVerifyEmail(ev.target.value)}
+                    placeholder="Player email"
+                    disabled={resending}
+                    style={{ width: '10rem' }}
+                  />
+                  <button type="submit" className="link-button" disabled={resending || !verifyEmail.trim()}>
+                    {resending ? 'Sending…' : 'Send'}
+                  </button>
+                  <button
+                    type="button"
+                    className="link-button"
+                    disabled={resending}
+                    onClick={() => {
+                      setRequestingEmail(false);
+                      setVerifyEmail('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              </>
             ) : (
-              <form
-                className="inline-form"
-                style={{ display: 'inline-flex', gap: '0.4rem', marginLeft: '0.5rem' }}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (verifyEmail.trim()) sendVerification(verifyEmail.trim());
-                }}
-              >
-                <input
-                  type="email"
-                  value={verifyEmail}
-                  onChange={(ev) => setVerifyEmail(ev.target.value)}
-                  placeholder="Player email"
-                  disabled={resending}
-                  style={{ width: '10rem' }}
-                />
-                <button type="submit" className="link-button" disabled={resending || !verifyEmail.trim()}>
-                  {resending ? 'Sending…' : 'Request verification'}
+              <>
+                {' '}
+                <button type="button" className="link-button" onClick={() => setRequestingEmail(true)}>
+                  Request verification
                 </button>
-              </form>
+              </>
             )}
           </>
         )}
