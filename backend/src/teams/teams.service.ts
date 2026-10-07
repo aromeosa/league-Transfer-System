@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import {
   LegacyReason,
@@ -48,6 +48,20 @@ export class TeamsService {
       .findOne({ where: { email: dto.owner.email } });
     if (existingOwner) {
       throw new ConflictException('A user with this email already exists');
+    }
+
+    // Same up-front/race-closing-backstop split as the owner email check above, plus a
+    // same-batch check — two rows in the one roster submission can collide with each
+    // other without ever touching the database at all.
+    const playerEmails = dto.players.map((p) => p.email);
+    if (new Set(playerEmails).size !== playerEmails.length) {
+      throw new ConflictException('Two players in this roster have the same email');
+    }
+    const existingPlayerEmail = await this.dataSource
+      .getRepository(Player)
+      .findOne({ where: { email: In(playerEmails) } });
+    if (existingPlayerEmail) {
+      throw new ConflictException('A player with this email is already registered');
     }
 
     let createdPlayers: Player[] = [];

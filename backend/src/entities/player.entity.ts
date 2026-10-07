@@ -71,10 +71,11 @@ export class Player {
    * "Add player") — what the registration-confirmation email goes to. Never returned
    * by the API (see idNumberHash for the same treatment) since a Free Agent's own
    * account email already lives on UserAccount, and this one has no other use once the
-   * confirmation is sent.
+   * confirmation is sent. Unique (like idNumberHash) so the same address can't be
+   * reused across two different players — multiple NULLs are still allowed.
    */
   @Exclude()
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
   email?: string | null;
 
   @Expose()

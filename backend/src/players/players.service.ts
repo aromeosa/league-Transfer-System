@@ -75,6 +75,13 @@ export class PlayersService {
     }
     const teamId = actingUser.teamId;
 
+    // Same up-front/race-closing-backstop split as every other duplicate check in this
+    // service — the catch below closes the race where two requests both pass this.
+    const existingEmail = await this.playerRepo.findOne({ where: { email } });
+    if (existingEmail) {
+      throw new ConflictException('A player with this email is already registered');
+    }
+
     let player: Player;
     try {
       player = await this.dataSource.transaction(async (manager) => {
@@ -110,6 +117,9 @@ export class PlayersService {
       if (isUniqueViolation(err, 'id_number_hash')) {
         throw new ConflictException('This ID/passport number is already registered to another player');
       }
+      if (isUniqueViolation(err, 'email')) {
+        throw new ConflictException('A player with this email is already registered');
+      }
       throw err;
     }
 
@@ -138,9 +148,20 @@ export class PlayersService {
     if (player.email && player.emailVerified) {
       throw new BadRequestException('This player has already confirmed their registration');
     }
-    if (email) {
+    if (email && email !== player.email) {
+      const existingEmail = await this.playerRepo.findOne({ where: { email } });
+      if (existingEmail) {
+        throw new ConflictException('A player with this email is already registered');
+      }
       player.email = email;
-      await this.playerRepo.save(player);
+      try {
+        await this.playerRepo.save(player);
+      } catch (err) {
+        if (isUniqueViolation(err, 'email')) {
+          throw new ConflictException('A player with this email is already registered');
+        }
+        throw err;
+      }
     }
     if (!player.email) {
       throw new BadRequestException('An email is required to request verification');
