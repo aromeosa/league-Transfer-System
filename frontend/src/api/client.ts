@@ -23,10 +23,12 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     const body = await res.json().catch(() => ({ message: res.statusText }));
     throw new ApiError(res.status, Array.isArray(body.message) ? body.message.join(', ') : (body.message ?? res.statusText));
   }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return res.json() as Promise<T>;
+  // A void-returning endpoint can come back 200/201 with an empty body, not just 204 —
+  // res.json() throws a raw (non-ApiError) SyntaxError on an empty string, which a
+  // caller's `err instanceof ApiError` check would otherwise mistake for a network
+  // failure even though the request actually succeeded.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const api = {
