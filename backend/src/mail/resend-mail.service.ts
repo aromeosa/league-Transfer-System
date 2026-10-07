@@ -23,6 +23,10 @@ export class ResendMailService implements MailService {
         <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email —
         your password won't be changed.</p>
       `,
+      `Someone requested a password reset for your 5quadLeague Transfer System account.\n\n` +
+        `Reset your password: ${resetUrl}\n\n` +
+        `This link expires in 1 hour. If you didn't request this, you can safely ignore this email — ` +
+        `your password won't be changed.`,
     );
   }
 
@@ -42,17 +46,26 @@ export class ResendMailService implements MailService {
         <p>This link expires in 7 days. If you don't recognize this team, you can safely ignore this email —
         you won't be added to their roster unless you confirm.</p>
       `,
+      `Hi ${playerName},\n\n` +
+        `${teamName} has registered you as a player on their 5quadLeague roster.\n\n` +
+        `Confirm your registration: ${confirmUrl}\n\n` +
+        `This link expires in 7 days. If you don't recognize this team, you can safely ignore this email — ` +
+        `you won't be added to their roster unless you confirm.`,
     );
   }
 
-  private async send(toEmail: string, subject: string, html: string): Promise<void> {
+  /**
+   * Sends a plain-text part alongside the HTML one — an HTML-only email is itself a
+   * common spam-filter signal, independent of domain/content.
+   */
+  private async send(toEmail: string, subject: string, html: string, text: string): Promise<void> {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from: this.fromEmail, to: toEmail, subject, html }),
+      body: JSON.stringify({ from: this.fromEmail, to: toEmail, subject, html, text }),
     });
 
     if (!res.ok) {
