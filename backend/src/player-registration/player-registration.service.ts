@@ -72,13 +72,4 @@ export class PlayerRegistrationService {
     }
     return this.playerRepo.save(token.player);
   }
-
-  /** Team owner (re)sending an invite — a lost/expired one for a pending player, or a
-   *  first-time retroactive request for an already-REGISTERED one. */
-  async resend(player: Player, teamName: string): Promise<void> {
-    if (player.emailVerified) {
-      throw new BadRequestException('This player has already confirmed their registration');
-    }
-    await this.issueInvite(player, teamName);
-  }
 }

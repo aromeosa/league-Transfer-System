@@ -132,6 +132,12 @@ export class PlayersService {
    */
   async resendRegistrationEmail(playerId: string, actingUser: AuthenticatedUser, email?: string): Promise<void> {
     const player = await this.getOwnedPlayer(playerId, actingUser);
+    // Checked against the email already on file *before* any update below — emailVerified
+    // defaults true for a player who's never been asked at all (see Player.emailVerified),
+    // so this only means something once there was actually an email to verify.
+    if (player.email && player.emailVerified) {
+      throw new BadRequestException('This player has already confirmed their registration');
+    }
     if (email) {
       player.email = email;
       await this.playerRepo.save(player);
@@ -139,7 +145,7 @@ export class PlayersService {
     if (!player.email) {
       throw new BadRequestException('An email is required to request verification');
     }
-    await this.registrationService.resend(player, player.currentTeam!.name);
+    await this.registrationService.issueInvite(player, player.currentTeam!.name);
   }
 
   /** Public directory of current Free Agents — used by the Teams and Free Agents pages. */
